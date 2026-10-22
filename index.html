@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Pulse headset test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --bg: #EEF0F7;
+  --surface: #FFFFFF;
+  --ink: #23264A;
+  --muted: #565B82;
+  --line: #D3D7E8;
+  --accent: #4352C4;
+  --accent-ink: #FFFFFF;
+  --lens: #15172B;
+  --glow: #BAC6FF;
+  --ok: #24704F;
+  --ok-bg: #E2F3EA;
+  --warn: #7E5300;
+  --warn-bg: #FFF2D6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1A1C2D;
+    --surface: #23263B;
+    --ink: #E8EAF5;
+    --muted: #A4A8C6;
+    --line: #383C58;
+    --accent: #AFBBFF;
+    --accent-ink: #191B2C;
+    --lens: #0F1020;
+    --glow: #BAC6FF;
+    --ok: #8ED2B3;
+    --ok-bg: #1F352E;
+    --warn: #F1C46E;
+    --warn-bg: #3A3222;
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+main { max-width: 38rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+/* Hero: the lens is where the on-screen preview plays */
+.hero { display: flex; align-items: center; gap: 1.75rem; margin-bottom: 2.75rem; }
+.hero-text { flex: 1; min-width: 0; }
+h1 { font-size: 3rem; line-height: 1; letter-spacing: -0.02em; margin: 0 0 0.6rem; font-weight: 700; }
+.lede { margin: 0; color: var(--muted); max-width: 30rem; }
+.lede strong { color: var(--ink); }
+.lens {
+  flex: none;
+  width: 8.5rem;
+  height: 8.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background-color: var(--lens);
+  background-image: radial-gradient(circle at 50% 46%, #F4F6FF 0%, var(--glow) 30%, rgba(186, 198, 255, 0.25) 55%, rgba(186, 198, 255, 0) 72%);
+}
+.lens.is-live { background-image: none; }
+
+/* Steps are a real sequence, so they get numbers and a connecting rail */
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.step { position: relative; padding: 0 0 2.25rem 3.25rem; counter-increment: step; }
+.step::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.step::after {
+  content: "";
+  position: absolute;
+  left: 1.05rem;
+  top: 2.45rem;
+  bottom: 0.4rem;
+  width: 1.5px;
+  background: var(--line);
+}
+.step:last-child::after { display: none; }
+.step h2 { font-size: 1.375rem; line-height: 1.25; margin: 0.15rem 0 0.75rem; }
+.step p { margin: 0 0 0.9rem; }
+.hint { color: var(--muted); font-size: 1rem; }
+
+.rules { margin: 0 0 1rem; padding-left: 1.2rem; }
+.rules li { margin-bottom: 0.4rem; }
+.check, .choice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+.check input, .choice input {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent);
+}
+.choice:has(input:checked) { border-color: var(--accent); }
+.choice strong { display: block; }
+.choice .hint { display: block; }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { font-weight: 700; padding: 0; margin-bottom: 0.5rem; }
+.choices { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+
+.slider { margin-bottom: 1.1rem; }
+.slider label { display: flex; justify-content: space-between; gap: 1rem; font-weight: 700; }
+.slider output { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.slider .hint { margin: 0.1rem 0 0; }
+input[type="range"] { width: 100%; height: 2rem; margin: 0.2rem 0 0; accent-color: var(--accent); }
+
+.row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  min-height: 3rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+.btn.secondary { background: transparent; color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.status {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.status.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
+.status.warn { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
+.progress { margin: 0.75rem 0 0; font-variant-numeric: tabular-nums; }
+
+/* Results */
+.results {
+  margin-top: 0.5rem;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.verdict { font-size: 1.75rem; line-height: 1.2; margin: 0 0 0.4rem; }
+.verdict:focus { outline: none; }
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 1.25rem; margin: 1.1rem 0 1.25rem; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.45rem 1rem 0.45rem 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 700; }
+.q { margin-bottom: 1.1rem; }
+.pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pill { position: relative; cursor: pointer; }
+.pill input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.pill span { display: inline-block; padding: 0.45rem 1rem; border-radius: 999px; border: 1.5px solid var(--line); }
+.pill input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.pill input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.report-label { display: block; font-weight: 700; margin-top: 0.5rem; }
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  font: 0.9rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  resize: vertical;
+}
+.footnote { margin: 2.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
+
+@media (max-width: 30rem) {
+  .hero { flex-direction: column-reverse; align-items: flex-start; gap: 1.25rem; }
+  h1 { font-size: 2.5rem; }
+  .lens { width: 7rem; height: 7rem; }
+  .step { padding-left: 2.85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="hero-text">
+      <h1>Pulse</h1>
+      <p class="lede"><strong>Headset test, version 0.1.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
+    </div>
+    <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
+  </header>
+
+  <noscript><p class="status warn">This test needs JavaScript turned on.</p></noscript>
+
+  <ol class="steps">
+    <li class="step">
+      <h2>Read before you start</h2>
+      <ul class="rules">
+        <li>Don’t use this if you’ve ever had a seizure, been told you have epilepsy, or been bothered by flashing lights.</li>
+        <li>Sit down, keep your eyes open, and stop if you feel dizzy, sick or get a headache.</li>
+        <li>In VR, any controller button stops everything instantly. On this screen, press Stop or the Esc key.</li>
+      </ul>
+      <label class="check"><input type="checkbox" id="ack"><span>I’ve read this and I’m sitting down.</span></label>
+    </li>
+
+    <li class="step">
+      <h2>Check your earbuds</h2>
+      <p>Plug wired earbuds into the headset. Each button plays a short tone in one ear only.</p>
+      <div class="row">
+        <button class="btn secondary" id="earL" type="button">Play left ear</button>
+        <button class="btn secondary" id="earR" type="button">Play right ear</button>
+      </div>
+      <p class="hint" style="margin-top:0.75rem">If a tone plays in the wrong ear, swap the earbuds before testing binaural sound.</p>
+    </li>
+
+    <li class="step">
+      <h2>Choose test settings</h2>
+      <fieldset class="choices" id="soundSet">
+        <legend>Sound</legend>
+        <label class="choice"><input type="radio" name="sound" value="binaural" checked><span><strong>Binaural</strong><span class="hint">A slightly different tone in each ear. Needs earbuds.</span></span></label>
+        <label class="choice"><input type="radio" name="sound" value="monaural"><span><strong>Monaural</strong><span class="hint">Both tones mixed into both ears. Pulses more strongly in studies.</span></span></label>
+        <label class="choice"><input type="radio" name="sound" value="isochronic"><span><strong>Isochronic</strong><span class="hint">One tone that fades on and off.</span></span></label>
+      </fieldset>
+      <div class="slider">
+        <label for="brightness">Brightness <output id="brightnessOut" for="brightness">25%</output></label>
+        <input type="range" id="brightness" min="10" max="50" step="5" value="25">
+      </div>
+      <div class="slider">
+        <label for="depth">Pulse strength <output id="depthOut" for="depth">60%</output></label>
+        <input type="range" id="depth" min="30" max="100" step="10" value="60">
+        <p class="hint">How far the light dims on each pulse.</p>
+      </div>
+      <div class="slider">
+        <label for="volume">Volume <output id="volumeOut" for="volume">25%</output></label>
+        <input type="range" id="volume" min="5" max="60" step="5" value="25">
+      </div>
+    </li>
+
+    <li class="step">
+      <h2>Run the test</h2>
+      <p>The test runs for 2 minutes: 30 seconds each at 6, 8, 10 and 12 pulses per second. It fades in over the first 10 seconds and stops on its own.</p>
+      <div class="row">
+        <button class="btn" id="vrBtn" type="button" disabled>Enter VR</button>
+        <button class="btn secondary" id="previewBtn" type="button" disabled>Preview on this screen</button>
+        <button class="btn secondary" id="stopBtn" type="button" hidden>Stop</button>
+      </div>
+      <p class="status" id="status" role="status">Checking for VR support…</p>
+      <p class="progress hint" id="progress" hidden></p>
+    </li>
+  </ol>
+
+  <section class="results" id="results" hidden aria-labelledby="verdict">
+    <h2 class="verdict" id="verdict" tabindex="-1"></h2>
+    <p id="verdictNote" style="margin:0"></p>
+    <dl class="stats" id="stats"></dl>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Rate</th><th scope="col">Missed frames</th><th scope="col">Worst gap</th></tr></thead>
+        <tbody id="segRows"></tbody>
+      </table>
+    </div>
+    <fieldset class="q">
+      <legend>Did the glow look smooth at every rate?</legend>
+      <div class="pills">
+        <label class="pill"><input type="radio" name="smooth" value="Yes"><span>Yes</span></label>
+        <label class="pill"><input type="radio" name="smooth" value="Some rates looked uneven"><span>Some rates looked uneven</span></label>
+        <label class="pill"><input type="radio" name="smooth" value="No"><span>No</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="q">
+      <legend>Could you hear the sound pulsing?</legend>
+      <div class="pills">
+        <label class="pill"><input type="radio" name="heard" value="Clearly"><span>Clearly</span></label>
+        <label class="pill"><input type="radio" name="heard" value="Faintly"><span>Faintly</span></label>
+        <label class="pill"><input type="radio" name="heard" value="Not at all"><span>Not at all</span></label>
+      </div>
+    </fieldset>
+    <label class="report-label" for="report">Report</label>
+    <p class="hint" style="margin:0.25rem 0 0">Send this to Claude so the next build can be tuned to your headset.</p>
+    <textarea id="report" readonly></textarea>
+    <div class="row">
+      <button class="btn" id="copyBtn" type="button">Copy report</button>
+      <button class="btn secondary" id="againBtn" type="button">Run again</button>
+    </div>
+    <p class="hint" id="copyNote" role="status" style="margin:0.75rem 0 0"></p>
+  </section>
+
+  <p class="footnote">Light is capped at 12 pulses per second and never uses red. Nothing is saved or sent anywhere.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Test definition ---------- */
+  var VERSION = '0.1';
+  var CARRIER_HZ = 400;          // binaural beats are heard best around 400 to 500 Hz
+  var MAX_LIGHT_HZ = 12;         // safety cap: stays below the 15 to 25 Hz risk band
+  var QUEST1_FRAME_MS = 1000 / 72;
+  var SEGMENTS = [
+    { hz: 6, dur: 30 },
+    { hz: 8, dur: 30 },
+    { hz: 10, dur: 30 },
+    { hz: 12, dur: 30 }
+  ];
+  var FADE_IN = 10;
+  var FADE_OUT = 5;
+  var SETTLE = 0.5;              // ignore frame timing for the first half second
+  var TINT = [0.84, 0.89, 1.0];  // cool white, no red bias
+
+  var TOTAL = 0;
+  var segStart = [];
+  var segCycles = [];
+  (function () {
+    var t = 0, cycles = 0;
+    for (var i = 0; i < SEGMENTS.length; i++) {
+      if (SEGMENTS[i].hz > MAX_LIGHT_HZ) throw new Error('Segment rate above safety cap');
+      segStart.push(t);
+      segCycles.push(cycles);
+      t += SEGMENTS[i].dur;
+      cycles += SEGMENTS[i].hz * SEGMENTS[i].dur;
+    }
+    TOTAL = t;
+  })();
+
+  function segIndexAt(t) {
+    for (var i = SEGMENTS.length - 1; i >= 0; i--) {
+      if (t >= segStart[i]) return i;
+    }
+    return 0;
+  }
+  // Pulse cycles elapsed by time t. Audio frequencies follow the same schedule,
+  // so the light's phase matches the sound's beat phase.
+  function cyclesAt(t) {
+    var i = segIndexAt(t);
+    return segCycles[i] + SEGMENTS[i].hz * (t - segStart[i]);
+  }
+  function envelopeAt(t) {
+    if (t <= 0 || t >= TOTAL) return 0;
+    return Math.min(1, t / FADE_IN, (TOTAL - t) / FADE_OUT);
+  }
+  // Linear luminance. Peaks when the cycle count is a whole number,
+  // which is when the two tones line up and the beat is loudest.
+  function lightAt(t, s) {
+    var env = envelopeAt(t);
+    if (env <= 0) return 0;
+    var dip = 0.5 - 0.5 * Math.cos(2 * Math.PI * cyclesAt(t));
+    return env * s.brightness * (1 - s.depth * dip);
+  }
+  function toRGB(L) {
+    var out = [];
+    for (var i = 0; i < 3; i++) out.push(Math.pow(Math.max(0, L * TINT[i]), 1 / 2.2));
+    return out;
+  }
+
+  /* ---------- Elements ---------- */
+  function $(id) { return document.getElementById(id); }
+  var ack = $('ack');
+  var lens = $('lens');
+  var vrBtn = $('vrBtn');
+  var previewBtn = $('previewBtn');
+  var stopBtn = $('stopBtn');
+  var statusEl = $('status');
+  var progressEl = $('progress');
+  var resultsEl = $('results');
+  var earL = $('earL');
+  var earR = $('earR');
+  var controls = [
+    $('brightness'), $('depth'), $('volume'), earL, earR
+  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"]')));
+
+  function readSettings() {
+    return {
+      sound: document.querySelector('input[name="sound"]:checked').value,
+      brightness: Number($('brightness').value) / 100,
+      depth: Number($('depth').value) / 100,
+      volume: Number($('volume').value) / 100
+    };
+  }
+  ['brightness', 'depth', 'volume'].forEach(function (id) {
+    var input = $(id), out = $(id + 'Out');
+    input.addEventListener('input', function () { out.textContent = input.value + '%'; });
+  });
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  /* ---------- Audio ---------- */
+  var ctx = null;
+  function getCtx() {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function softSquareCurve(k) {
+    var n = 1024, curve = new Float32Array(n), norm = Math.tanh(k);
+    for (var i = 0; i < n; i++) {
+      var x = (i * 2) / (n - 1) - 1;
+      curve[i] = 0.5 + (0.5 * Math.tanh(k * x)) / norm;
+    }
+    return curve;
+  }
+
+  function buildAudio(s, t0) {
+    var c = ctx;
+    var master = c.createGain();
+    master.gain.setValueAtTime(0, t0);
+    master.gain.linearRampToValueAtTime(s.volume, t0 + FADE_IN);
+    master.gain.setValueAtTime(s.volume, t0 + TOTAL - FADE_OUT);
+    master.gain.linearRampToValueAtTime(0, t0 + TOTAL);
+    master.connect(c.destination);
+
+    function schedule(param, fn) {
+      for (var i = 0; i < SEGMENTS.length; i++) {
+        param.setValueAtTime(fn(SEGMENTS[i].hz), t0 + segStart[i]);
+      }
+    }
+
+    var oscs = [];
+    if (s.sound === 'isochronic') {
+      var carrier = c.createOscillator();
+      carrier.frequency.value = CARRIER_HZ;
+      var amp = c.createGain();
+      amp.gain.value = 0;
+      var lfo = c.createOscillator();
+      // Cosine wave so the loudest point lines up with the brightest point
+      lfo.setPeriodicWave(c.createPeriodicWave(new Float32Array([0, 1]), new Float32Array([0, 0]), { disableNormalization: true }));
+      schedule(lfo.frequency, function (hz) { return hz; });
+      var shaper = c.createWaveShaper();
+      shaper.curve = softSquareCurve(3);
+      lfo.connect(shaper);
+      shaper.connect(amp.gain);
+      carrier.connect(amp);
+      amp.connect(master);
+      oscs.push(carrier, lfo);
+    } else {
+      var lo = c.createOscillator();
+      var hi = c.createOscillator();
+      schedule(lo.frequency, function (hz) { return CARRIER_HZ - hz / 2; });
+      schedule(hi.frequency, function (hz) { return CARRIER_HZ + hz / 2; });
+      var gLo = c.createGain(), gHi = c.createGain();
+      gLo.gain.value = 0.5;
+      gHi.gain.value = 0.5;
+      lo.connect(gLo);
+      hi.connect(gHi);
+      if (s.sound === 'binaural') {
+        var merger = c.createChannelMerger(2);
+        gLo.connect(merger, 0, 0);
+        gHi.connect(merger, 0, 1);
+        merger.connect(master);
+      } else {
+        gLo.connect(master);
+        gHi.connect(master);
+      }
+      oscs.push(lo, hi);
+    }
+    oscs.forEach(function (o) { o.start(t0); o.stop(t0 + TOTAL + 0.2); });
+    return { master: master, oscs: oscs };
+  }
+
+  function silence(audio) {
+    if (!audio) return;
+    var now = ctx.currentTime;
+    var g = audio.master.gain;
+    try {
+      if (g.cancelAndHoldAtTime) {
+        g.cancelAndHoldAtTime(now);
+      } else {
+        var v = g.value;
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(v, now);
+      }
+      g.setTargetAtTime(0, now, 0.004);
+    } catch (e) { /* fall through to stopping oscillators */ }
+    audio.oscs.forEach(function (o) { try { o.stop(now + 0.06); } catch (e) {} });
+    setTimeout(function () { try { audio.master.disconnect(); } catch (e) {} }, 300);
+  }
+
+  // Maps "now" on the page clock to the audio sample currently reaching the ears
+  function audioNow() {
+    var perf = performance.now();
+    if (ctx.getOutputTimestamp) {
+      var ts = ctx.getOutputTimestamp();
+      if (ts && ts.performanceTime > 0) return ts.contextTime + (perf - ts.performanceTime) / 1000;
+    }
+    return ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
+  }
+
+  function playEar(side) {
+    var c = getCtx();
+    var now = c.currentTime + 0.05;
+    var vol = (Number($('volume').value) / 100) * 0.5;
+    var osc = c.createOscillator();
+    osc.frequency.value = CARRIER_HZ;
+    var g = c.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(vol, now + 0.03);
+    g.gain.setValueAtTime(vol, now + 0.8);
+    g.gain.linearRampToValueAtTime(0, now + 0.85);
+    var merger = c.createChannelMerger(2);
+    osc.connect(g);
+    g.connect(merger, 0, side === 'left' ? 0 : 1);
+    merger.connect(c.destination);
+    osc.start(now);
+    osc.stop(now + 0.9);
+    osc.onended = function () { try { merger.disconnect(); } catch (e) {} };
+  }
+  earL.addEventListener('click', function () { playEar('left'); });
+  earR.addEventListener('click', function () { playEar('right'); });
+
+  /* ---------- Shared run logic ---------- */
+  var run = null;
+
+  function startRun(mode) {
+    getCtx();
+    run = {
+      mode: mode,
+      s: readSettings(),
+      t0: null,
+      audio: null,
+      lastFrameT: null,
+      gaps: [],
+      gapSeg: [],
+      elapsed: 0,
+      done: false,
+      reason: null,
+      frameRate: null
+    };
+    resultsEl.hidden = true;
+    updateButtons();
+  }
+
+  // Called once per displayed frame. Returns the luminance to show.
+  function frameTick(frameT) {
+    if (run.t0 === null) {
+      run.t0 = ctx.currentTime + 0.25;
+      run.audio = buildAudio(run.s, run.t0);
+    }
+    var t = audioNow() - run.t0;
+    if (run.lastFrameT !== null && t >= SETTLE && t < TOTAL) {
+      run.gaps.push(frameT - run.lastFrameT);
+      run.gapSeg.push(segIndexAt(t));
+    }
+    run.lastFrameT = frameT;
+    if (t > run.elapsed) run.elapsed = t;
+    if (t >= TOTAL) {
+      finish('complete');
+      return 0;
+    }
+    return t < 0 ? 0 : lightAt(t, run.s);
+  }
+
+  function finish(reason) {
+    if (!run || run.done) return;
+    run.done = true;
+    run.reason = reason;
+    silence(run.audio);
+    if (run.mode === 'vr') endXR(); else endPreview();
+    updateButtons();
+    showResults();
+  }
+
+  function updateButtons() {
+    var running = !!(run && !run.done);
+    var ready = ack.checked && !running;
+    vrBtn.disabled = !(ready && vrSupported);
+    previewBtn.disabled = !ready;
+    stopBtn.hidden = !(running && run.mode === 'preview');
+    controls.forEach(function (el) { el.disabled = running; });
+    ack.disabled = running;
+  }
+  ack.addEventListener('change', updateButtons);
+
+  /* ---------- VR ---------- */
+  var vrSupported = false;
+  var xr = { session: null, gl: null, refSpace: null };
+  var kill = { armed: false, armAfter: 0 };
+
+  function checkVR() {
+    if (!window.isSecureContext) {
+      setStatus('VR mode needs an https address. Put this file on GitHub Pages, then open that link in the Quest browser. Preview still works here.', 'warn');
+      return;
+    }
+    if (!navigator.xr || !navigator.xr.isSessionSupported) {
+      setStatus('This browser doesn’t support VR mode. Open the page in the Quest browser. Preview still works here.', 'warn');
+      return;
+    }
+    navigator.xr.isSessionSupported('immersive-vr').then(function (ok) {
+      vrSupported = ok;
+      if (ok) setStatus('VR mode is available. Put on your earbuds, tap Enter VR, then hold the controllers still.', 'ok');
+      else setStatus('No VR headset found. Preview still works here.', 'warn');
+      updateButtons();
+    }, function () {
+      setStatus('Couldn’t check for VR support. Preview still works here.', 'warn');
+    });
+  }
+
+  function anyButtonPressed(session) {
+    var sources = session.inputSources;
+    if (!sources) return false;
+    for (var i = 0; i < sources.length; i++) {
+      var gp = sources[i].gamepad;
+      if (!gp) continue;
+      for (var b = 0; b < gp.buttons.length; b++) {
+        if (gp.buttons[b].pressed) return true;
+      }
+    }
+    return false;
+  }
+
+  function enterVR() {
+    startRun('vr');
+    navigator.xr.requestSession('immersive-vr').then(onSession, function (err) {
+      run = null;
+      updateButtons();
+      setStatus('VR mode didn’t start: ' + (err && err.message ? err.message : 'unknown error') + '.', 'warn');
+    });
+  }
+
+  function onSession(session) {
+    xr.session = session;
+    var canvas = document.createElement('canvas');
+    var gl = canvas.getContext('webgl', { xrCompatible: true, antialias: false, alpha: false, depth: false, stencil: false });
+    xr.gl = gl;
+    var layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, framebufferScaleFactor: 0.5 });
+    session.updateRenderState({ baseLayer: layer });
+
+    run.frameRate = session.frameRate || null;
+    kill.armed = false;
+    kill.armAfter = performance.now() + 800;
+
+    session.addEventListener('end', onSessionEnd);
+    session.addEventListener('visibilitychange', function () {
+      if (kill.armed && session.visibilityState !== 'visible') finish('menu');
+    });
+    session.addEventListener('selectstart', function () { if (kill.armed) finish('button'); });
+    session.addEventListener('squeezestart', function () { if (kill.armed) finish('button'); });
+    session.requestReferenceSpace('local').then(function (rs) { xr.refSpace = rs; }, function () {});
+    session.requestAnimationFrame(onXRFrame);
+  }
+
+  function paintXR(L) {
+    var session = xr.session, gl = xr.gl;
+    if (!session || !gl || !session.renderState.baseLayer) return;
+    var c = toRGB(L);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+    gl.clearColor(c[0], c[1], c[2], 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+
+  function onXRFrame(T, frame) {
+    if (!run || run.done) { paintXR(0); return; }
+    var session = frame.session;
+    session.requestAnimationFrame(onXRFrame);
+
+    // Kill switch: arms once every button has been released after entering VR
+    var pressed = anyButtonPressed(session);
+    if (!kill.armed) {
+      if (!pressed && performance.now() > kill.armAfter) kill.armed = true;
+    } else if (pressed) {
+      paintXR(0);
+      finish('button');
+      return;
+    }
+
+    if (xr.refSpace) { try { frame.getViewerPose(xr.refSpace); } catch (e) {} }
+    paintXR(frameTick(T));
+  }
+
+  function endXR() {
+    if (!xr.session) return;
+    var s = xr.session;
+    try { s.end(); } catch (e) {}
+  }
+
+  function onSessionEnd() {
+    xr.session = null;
+    xr.gl = null;
+    xr.refSpace = null;
+    if (run && !run.done) finish('closed');
+  }
+
+  vrBtn.addEventListener('click', enterVR);
+
+  /* ---------- On-screen preview ---------- */
+  var previewRaf = 0;
+  var progressTimer = 0;
+
+  function startPreview() {
+    startRun('preview');
+    lens.classList.add('is-live');
+    progressEl.hidden = false;
+    previewRaf = requestAnimationFrame(onPreviewFrame);
+    progressTimer = setInterval(showProgress, 250);
+    showProgress();
+    stopBtn.focus();
+  }
+
+  function onPreviewFrame(T) {
+    if (!run || run.done) return;
+    previewRaf = requestAnimationFrame(onPreviewFrame);
+    var c = toRGB(frameTick(T));
+    lens.style.backgroundColor = 'rgb(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' + Math.round(c[2] * 255) + ')';
+  }
+
+  function showProgress() {
+    if (!run || run.done) return;
+    var t = Math.max(0, run.elapsed);
+    var hz = SEGMENTS[segIndexAt(t)].hz;
+    progressEl.textContent = hz + ' pulses per second, ' + fmtTime(t) + ' of ' + fmtTime(TOTAL);
+  }
+
+  function endPreview() {
+    cancelAnimationFrame(previewRaf);
+    clearInterval(progressTimer);
+    lens.style.backgroundColor = '';
+    lens.classList.remove('is-live');
+    progressEl.hidden = true;
+  }
+
+  previewBtn.addEventListener('click', startPreview);
+  stopBtn.addEventListener('click', function () { finish('stopped'); });
+  document.addEventListener('keydown', function (e) {
+    if (run && !run.done && run.mode === 'preview' && (e.key === 'Escape' || e.key === ' ')) {
+      e.preventDefault();
+      finish('stopped');
+    }
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && run && !run.done && run.mode === 'preview') finish('hidden');
+  });
+
+  /* ---------- Results ---------- */
+  var REASONS = {
+    complete: 'Finished',
+    button: 'You pressed a controller button.',
+    menu: 'The headset menu opened.',
+    closed: 'The VR view closed.',
+    stopped: 'You stopped it.',
+    hidden: 'The page went into the background.'
+  };
+
+  function fmtTime(t) {
+    var s = Math.max(0, Math.floor(t));
+    return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60);
+  }
+  function ms(x) { return x.toFixed(1) + ' ms'; }
+
+  function summarize(r) {
+    var gaps = r.gaps, n = gaps.length;
+    var res = { n: n };
+    if (!n) return res;
+    var sum = 0, worst = 0, i;
+    for (i = 0; i < n; i++) {
+      sum += gaps[i];
+      if (gaps[i] > worst) worst = gaps[i];
+    }
+    var sorted = gaps.slice().sort(function (a, b) { return a - b; });
+    var median = sorted[Math.floor(n / 2)];
+    var expected = r.mode === 'vr' ? QUEST1_FRAME_MS : median;
+    var missed = 0;
+    var perSeg = SEGMENTS.map(function () { return { missed: 0, worst: 0, frames: 0 }; });
+    for (i = 0; i < n; i++) {
+      var m = Math.max(0, Math.round(gaps[i] / expected) - 1);
+      var seg = perSeg[r.gapSeg[i]];
+      missed += m;
+      seg.missed += m;
+      seg.frames++;
+      if (gaps[i] > seg.worst) seg.worst = gaps[i];
+    }
+    res.fps = n / (sum / 1000);
+    res.median = median;
+    res.missed = missed;
+    res.missedPct = (100 * missed) / (n + missed);
+    res.worst = worst;
+    res.perSeg = perSeg;
+    return res;
+  }
+
+  var lastSummary = null;
+
+  function showResults() {
+    var r = run;
+    var sum = summarize(r);
+    lastSummary = sum;
+    var complete = r.reason === 'complete';
+    var verdict, note;
+
+    if (sum.n < 72) {
+      verdict = complete ? 'Not enough data' : 'Stopped at ' + fmtTime(r.elapsed);
+      note = (complete ? '' : REASONS[r.reason] + ' ') + 'Too few frames were recorded to judge smoothness.';
+    } else {
+      var smooth = sum.missedPct < 0.5 ? 'Smooth playback' : sum.missedPct < 3 ? 'Mostly smooth' : 'Choppy playback';
+      verdict = complete ? smooth : 'Stopped at ' + fmtTime(r.elapsed) + ', ' + smooth.toLowerCase();
+      if (sum.missedPct < 0.5) note = 'The display kept up the whole time.';
+      else if (sum.missedPct < 3) note = 'A few frames were late. Short hiccups are normal, but mention any stutter you noticed.';
+      else note = 'Too many frames were late for reliable pulsing. The report will show where it struggled.';
+      if (!complete) note = REASONS[r.reason] + ' ' + note;
+      if (r.mode === 'preview') note += ' This was the on-screen preview, so it reflects this screen, not the headset.';
+    }
+    $('verdict').textContent = verdict;
+    $('verdictNote').textContent = note;
+
+    var stats = $('stats');
+    stats.innerHTML = '';
+    function stat(label, value) {
+      var dt = document.createElement('dt'); dt.textContent = label;
+      var dd = document.createElement('dd'); dd.textContent = value;
+      stats.appendChild(dt); stats.appendChild(dd);
+    }
+    stat('Ran in', r.mode === 'vr' ? 'VR headset' : 'On-screen preview');
+    stat('Length', fmtTime(Math.min(r.elapsed, TOTAL)) + ' of ' + fmtTime(TOTAL));
+    if (sum.n) {
+      stat('Frame rate', sum.fps.toFixed(1) + ' per second');
+      stat('Missed frames', sum.missed + ' (' + sum.missedPct.toFixed(2) + '%)');
+      stat('Worst gap', ms(sum.worst));
+    }
+
+    var rows = $('segRows');
+    rows.innerHTML = '';
+    SEGMENTS.forEach(function (seg, i) {
+      var tr = document.createElement('tr');
+      var p = sum.perSeg ? sum.perSeg[i] : null;
+      var cells = [
+        seg.hz + ' per second',
+        p && p.frames ? String(p.missed) : 'Not reached',
+        p && p.frames ? ms(p.worst) : ''
+      ];
+      cells.forEach(function (text) {
+        var td = document.createElement('td');
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      rows.appendChild(tr);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="smooth"], input[name="heard"]'), function (el) { el.checked = false; });
+    buildReport();
+    $('copyNote').textContent = '';
+    resultsEl.hidden = false;
+    setTimeout(function () {
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('verdict').focus({ preventScroll: true });
+    }, 50);
+  }
+
+  function answer(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : 'Not answered';
+  }
+
+  function buildReport() {
+    if (!run) return;
+    var r = run, sum = lastSummary || summarize(r);
+    var lines = [];
+    lines.push('Pulse test v' + VERSION);
+    lines.push('Mode: ' + (r.mode === 'vr' ? 'VR headset' : 'on-screen preview'));
+    lines.push('Result: ' + (r.reason === 'complete' ? 'complete' : 'stopped at ' + fmtTime(r.elapsed) + ' (' + r.reason + ')'));
+    lines.push('Sound: ' + r.s.sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
+    lines.push('Light: brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
+    if (sum.n) {
+      lines.push('Frames: ' + sum.n + ' at ' + sum.fps.toFixed(1) + ' fps (median gap ' + ms(sum.median) + ')');
+      lines.push('Missed frames: ' + sum.missed + ' (' + sum.missedPct.toFixed(2) + '%), worst gap ' + ms(sum.worst));
+      SEGMENTS.forEach(function (seg, i) {
+        var p = sum.perSeg[i];
+        lines.push('  ' + seg.hz + ' Hz: ' + (p.frames ? p.missed + ' missed, worst ' + ms(p.worst) : 'not reached'));
+      });
+    } else {
+      lines.push('Frames: none recorded');
+    }
+    if (r.mode === 'vr') lines.push('Session frame rate: ' + (r.frameRate ? r.frameRate : 'not reported'));
+    if (ctx) {
+      lines.push('Audio: ' + ctx.sampleRate + ' Hz, base latency ' + (ctx.baseLatency ? Math.round(ctx.baseLatency * 1000) + ' ms' : 'n/a') +
+        ', output latency ' + (ctx.outputLatency ? Math.round(ctx.outputLatency * 1000) + ' ms' : 'n/a') +
+        ', output timestamps ' + (ctx.getOutputTimestamp ? 'yes' : 'no'));
+    }
+    lines.push('Smooth glow: ' + answer('smooth'));
+    lines.push('Heard pulsing: ' + answer('heard'));
+    lines.push('Browser: ' + navigator.userAgent);
+    $('report').value = lines.join('\n');
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="smooth"], input[name="heard"]'), function (el) {
+    el.addEventListener('change', buildReport);
+  });
+
+  $('copyBtn').addEventListener('click', function () {
+    var text = $('report').value;
+    var note = $('copyNote');
+    function fallback() {
+      var ta = $('report');
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      note.textContent = ok ? 'Copied.' : 'Select the report text and copy it by hand.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { note.textContent = 'Copied.'; }, fallback);
+    } else {
+      fallback();
+    }
+  });
+
+  $('againBtn').addEventListener('click', function () {
+    resultsEl.hidden = true;
+    run = null;
+    updateButtons();
+    vrBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  checkVR();
+  updateButtons();
+})();
+</script>
+</body>
+</html>
