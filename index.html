@@ -190,6 +190,8 @@ th { font-weight: 700; }
 .pill { position: relative; cursor: pointer; }
 .pill input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .pill span { display: inline-block; padding: 0.45rem 1rem; border-radius: 999px; border: 1.5px solid var(--line); }
+.swatch { display: inline-block; width: 0.95rem; height: 0.95rem; border-radius: 50%; margin-right: 0.45rem; vertical-align: -0.12rem; box-shadow: 0 0 0 1px var(--line); }
+.color-pills { margin-bottom: 0.4rem; }
 .pill input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
 .pill input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
 .report-label { display: block; font-weight: 700; margin-top: 0.5rem; }
@@ -225,7 +227,7 @@ textarea {
   <header class="hero">
     <div class="hero-text">
       <h1>Pulse</h1>
-      <p class="lede"><strong>Headset test, version 0.2.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
+      <p class="lede"><strong>Headset test, version 0.3.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
     </div>
     <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
   </header>
@@ -265,6 +267,17 @@ textarea {
         <legend>Light</legend>
         <label class="choice"><input type="radio" name="wave" value="strobe" checked><span><strong>Strobe</strong><span class="hint">Sharp flashes, on about a third of the time, like the lamps used in studies.</span></span></label>
         <label class="choice"><input type="radio" name="wave" value="smooth"><span><strong>Smooth</strong><span class="hint">A soft glow that rises and falls.</span></span></label>
+      </fieldset>
+      <fieldset class="q" id="colorSet" style="margin-bottom:1.5rem">
+        <legend>Color</legend>
+        <div class="pills color-pills">
+          <label class="pill"><input type="radio" name="color" value="white" checked><span><i class="swatch" style="background:#E9EDFF"></i>Cool white</span></label>
+          <label class="pill"><input type="radio" name="color" value="warm"><span><i class="swatch" style="background:#FFE7C4"></i>Warm white</span></label>
+          <label class="pill"><input type="radio" name="color" value="green"><span><i class="swatch" style="background:#8CFF9E"></i>Green</span></label>
+          <label class="pill"><input type="radio" name="color" value="teal"><span><i class="swatch" style="background:#6CF2E6"></i>Teal</span></label>
+          <label class="pill"><input type="radio" name="color" value="blue"><span><i class="swatch" style="background:#7FA2FF"></i>Blue</span></label>
+        </div>
+        <p class="hint" style="margin:0">Blue looks dimmer than the others at the same setting. Red isn’t offered because it raises seizure risk.</p>
       </fieldset>
       <div class="slider">
         <label for="brightness">Brightness <output id="brightnessOut" for="brightness">35%</output></label>
@@ -352,7 +365,7 @@ textarea {
   'use strict';
 
   /* ---------- Test definition ---------- */
-  var VERSION = '0.2';
+  var VERSION = '0.3';
   var CARRIER_HZ = 400;          // binaural beats are heard best around 400 to 500 Hz
   var MAX_LIGHT_HZ = 12;         // safety cap: stays below the 15 to 25 Hz risk band
   var QUEST1_FRAME_MS = 1000 / 72;
@@ -368,7 +381,15 @@ textarea {
   var FADE_IN = 10;
   var FADE_OUT = 5;
   var SETTLE = 0.5;              // ignore frame timing for the first half second
-  var TINT = [0.84, 0.89, 1.0];  // cool white, no red bias
+  // Linear-light color multipliers. No saturated red: it raises seizure risk.
+  var COLORS = {
+    white: { name: 'cool white', code: 'CW', tint: [0.84, 0.89, 1.0] },
+    warm:  { name: 'warm white', code: 'WW', tint: [1.0, 0.80, 0.56] },
+    green: { name: 'green',      code: 'GR', tint: [0.22, 1.0, 0.32] },
+    teal:  { name: 'teal',       code: 'TL', tint: [0.12, 0.88, 0.80] },
+    blue:  { name: 'blue',       code: 'BL', tint: [0.20, 0.40, 1.0] }
+  };
+  var currentTint = COLORS.white.tint;
 
   var TOTAL = 0;
   var segStart = [];
@@ -425,7 +446,7 @@ textarea {
   }
   function toRGB(L) {
     var out = [];
-    for (var i = 0; i < 3; i++) out.push(Math.pow(Math.max(0, L * TINT[i]), 1 / 2.2));
+    for (var i = 0; i < 3; i++) out.push(Math.pow(Math.max(0, L * currentTint[i]), 1 / 2.2));
     return out;
   }
 
@@ -443,12 +464,13 @@ textarea {
   var earR = $('earR');
   var controls = [
     $('brightness'), $('depth'), $('volume'), earL, earR
-  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"], input[name="wave"]')));
+  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"], input[name="wave"], input[name="color"]')));
 
   function readSettings() {
     return {
       sound: document.querySelector('input[name="sound"]:checked').value,
       wave: document.querySelector('input[name="wave"]:checked').value,
+      color: document.querySelector('input[name="color"]:checked').value,
       brightness: Number($('brightness').value) / 100,
       depth: Number($('depth').value) / 100,
       volume: Number($('volume').value) / 100
@@ -457,6 +479,15 @@ textarea {
   ['brightness', 'depth', 'volume'].forEach(function (id) {
     var input = $(id), out = $(id + 'Out');
     input.addEventListener('input', function () { out.textContent = input.value + '%'; });
+  });
+
+  function updateLensColor() {
+    var t = COLORS[document.querySelector('input[name="color"]:checked').value].tint;
+    var rgb = t.map(function (v) { return Math.round(Math.pow(v, 1 / 2.2) * 255); }).join(',');
+    lens.style.backgroundImage = 'radial-gradient(circle at 50% 46%, rgba(' + rgb + ',1) 0%, rgba(' + rgb + ',0.85) 30%, rgba(' + rgb + ',0.25) 55%, rgba(' + rgb + ',0) 72%)';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="color"]'), function (el) {
+    el.addEventListener('change', updateLensColor);
   });
 
   function setStatus(text, kind) {
@@ -636,6 +667,7 @@ textarea {
       reason: null,
       frameRate: null
     };
+    currentTint = COLORS[run.s.color].tint;
     resultsEl.hidden = true;
     updateButtons();
   }
@@ -799,6 +831,7 @@ textarea {
   function startPreview() {
     startRun('preview');
     lens.classList.add('is-live');
+    lens.style.backgroundImage = 'none';
     progressEl.hidden = false;
     previewRaf = requestAnimationFrame(onPreviewFrame);
     progressTimer = setInterval(showProgress, 250);
@@ -825,6 +858,7 @@ textarea {
     clearInterval(progressTimer);
     lens.style.backgroundColor = '';
     lens.classList.remove('is-live');
+    updateLensColor();
     progressEl.hidden = true;
   }
 
@@ -967,7 +1001,7 @@ textarea {
     lines.push('Mode: ' + (r.mode === 'vr' ? 'VR headset' : 'on-screen preview'));
     lines.push('Result: ' + (r.reason === 'complete' ? 'complete' : 'stopped at ' + fmtTime(r.elapsed) + ' (' + r.reason + ')'));
     lines.push('Sound: ' + r.s.sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
-    lines.push('Light: ' + r.s.wave + ', brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
+    lines.push('Light: ' + r.s.wave + ', ' + COLORS[r.s.color].name + ', brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
     if (sum.n) {
       lines.push('Frames: ' + sum.n + ' at ' + sum.fps.toFixed(1) + ' fps (median gap ' + ms(sum.median) + ')');
       lines.push('Missed frames: ' + sum.missed + ' (' + sum.missedPct.toFixed(2) + '%), worst gap ' + ms(sum.worst));
@@ -991,12 +1025,13 @@ textarea {
     lines.push('Browser: ' + navigator.userAgent);
     $('report').value = lines.join('\n');
 
-    // Short code, e.g. "VR ST 72.0 0-0-3-0 P3 CC"
+    // Short code, e.g. "VR ST GR 72.0 0-0-3-0 P3 CC"
     var letter = function (v) { return v === 'Not answered' ? '?' : v.charAt(0); };
     var missedList = sum.perSeg ? sum.perSeg.map(function (p) { return p.frames ? p.missed : 'x'; }).join('-') : 'x-x-x-x';
     $('quick').textContent = [
       r.mode === 'vr' ? 'VR' : 'PV',
       r.s.wave === 'strobe' ? 'ST' : 'SM',
+      COLORS[r.s.color].code,
       sum.n ? sum.fps.toFixed(1) : '0',
       missedList,
       worst === 'Not answered' ? 'P?' : 'P' + worst,
@@ -1033,6 +1068,7 @@ textarea {
     vrBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
+  updateLensColor();
   checkVR();
   updateButtons();
 })();
