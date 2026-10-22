@@ -206,6 +206,7 @@ textarea {
   border-radius: 0.6rem;
   resize: vertical;
 }
+.quick { margin: 0.35rem 0 0; font-size: 1.375rem; font-weight: 700; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
 .footnote { margin: 2.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
 
 @media (max-width: 30rem) {
@@ -224,7 +225,7 @@ textarea {
   <header class="hero">
     <div class="hero-text">
       <h1>Pulse</h1>
-      <p class="lede"><strong>Headset test, version 0.1.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
+      <p class="lede"><strong>Headset test, version 0.2.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
     </div>
     <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
   </header>
@@ -260,14 +261,19 @@ textarea {
         <label class="choice"><input type="radio" name="sound" value="monaural"><span><strong>Monaural</strong><span class="hint">Both tones mixed into both ears. Pulses more strongly in studies.</span></span></label>
         <label class="choice"><input type="radio" name="sound" value="isochronic"><span><strong>Isochronic</strong><span class="hint">One tone that fades on and off.</span></span></label>
       </fieldset>
+      <fieldset class="choices" id="waveSet">
+        <legend>Light</legend>
+        <label class="choice"><input type="radio" name="wave" value="strobe" checked><span><strong>Strobe</strong><span class="hint">Sharp flashes, on about a third of the time, like the lamps used in studies.</span></span></label>
+        <label class="choice"><input type="radio" name="wave" value="smooth"><span><strong>Smooth</strong><span class="hint">A soft glow that rises and falls.</span></span></label>
+      </fieldset>
       <div class="slider">
-        <label for="brightness">Brightness <output id="brightnessOut" for="brightness">25%</output></label>
-        <input type="range" id="brightness" min="10" max="50" step="5" value="25">
+        <label for="brightness">Brightness <output id="brightnessOut" for="brightness">35%</output></label>
+        <input type="range" id="brightness" min="10" max="50" step="5" value="35">
       </div>
       <div class="slider">
-        <label for="depth">Pulse strength <output id="depthOut" for="depth">60%</output></label>
-        <input type="range" id="depth" min="30" max="100" step="10" value="60">
-        <p class="hint">How far the light dims on each pulse.</p>
+        <label for="depth">Pulse strength <output id="depthOut" for="depth">100%</output></label>
+        <input type="range" id="depth" min="30" max="100" step="10" value="100">
+        <p class="hint">How far the light dims between pulses. At 100% it goes fully dark.</p>
       </div>
       <div class="slider">
         <label for="volume">Volume <output id="volumeOut" for="volume">25%</output></label>
@@ -277,7 +283,8 @@ textarea {
 
     <li class="step">
       <h2>Run the test</h2>
-      <p>The test runs for 2 minutes: 30 seconds each at 6, 8, 10 and 12 pulses per second. It fades in over the first 10 seconds and stops on its own.</p>
+      <p>The test runs for 2 minutes in four 30-second parts: 6, 8, 10.3 and 12 pulses per second. It fades in over the first 10 seconds and stops on its own.</p>
+      <p class="hint">A soft tick marks each new part: one tick before part 2, two before part 3, three before part 4.</p>
       <div class="row">
         <button class="btn" id="vrBtn" type="button" disabled>Enter VR</button>
         <button class="btn secondary" id="previewBtn" type="button" disabled>Preview on this screen</button>
@@ -299,11 +306,21 @@ textarea {
       </table>
     </div>
     <fieldset class="q">
-      <legend>Did the glow look smooth at every rate?</legend>
+      <legend>Was the pulsing light easy to see?</legend>
       <div class="pills">
-        <label class="pill"><input type="radio" name="smooth" value="Yes"><span>Yes</span></label>
-        <label class="pill"><input type="radio" name="smooth" value="Some rates looked uneven"><span>Some rates looked uneven</span></label>
-        <label class="pill"><input type="radio" name="smooth" value="No"><span>No</span></label>
+        <label class="pill"><input type="radio" name="seen" value="Clearly"><span>Clearly</span></label>
+        <label class="pill"><input type="radio" name="seen" value="Faintly"><span>Faintly</span></label>
+        <label class="pill"><input type="radio" name="seen" value="Not at all"><span>Not at all</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="q">
+      <legend>Which part looked least even?</legend>
+      <div class="pills">
+        <label class="pill"><input type="radio" name="worst" value="1"><span>Part 1</span></label>
+        <label class="pill"><input type="radio" name="worst" value="2"><span>Part 2</span></label>
+        <label class="pill"><input type="radio" name="worst" value="3"><span>Part 3</span></label>
+        <label class="pill"><input type="radio" name="worst" value="4"><span>Part 4</span></label>
+        <label class="pill"><input type="radio" name="worst" value="0"><span>All looked even</span></label>
       </div>
     </fieldset>
     <fieldset class="q">
@@ -314,7 +331,10 @@ textarea {
         <label class="pill"><input type="radio" name="heard" value="Not at all"><span>Not at all</span></label>
       </div>
     </fieldset>
-    <label class="report-label" for="report">Report</label>
+    <p class="report-label">Quick code</p>
+    <p class="quick" id="quick"></p>
+    <p class="hint" style="margin:0.25rem 0 1rem">If copying is a hassle, type just this to Claude.</p>
+    <label class="report-label" for="report">Full report</label>
     <p class="hint" style="margin:0.25rem 0 0">Send this to Claude so the next build can be tuned to your headset.</p>
     <textarea id="report" readonly></textarea>
     <div class="row">
@@ -332,16 +352,19 @@ textarea {
   'use strict';
 
   /* ---------- Test definition ---------- */
-  var VERSION = '0.1';
+  var VERSION = '0.2';
   var CARRIER_HZ = 400;          // binaural beats are heard best around 400 to 500 Hz
   var MAX_LIGHT_HZ = 12;         // safety cap: stays below the 15 to 25 Hz risk band
   var QUEST1_FRAME_MS = 1000 / 72;
+  // Every rate divides the Quest 1's 72 Hz refresh into a whole number of frames
+  // (12, 9, 7 and 6), so each pulse is drawn identically. 10 Hz would be 7.2 frames.
   var SEGMENTS = [
     { hz: 6, dur: 30 },
     { hz: 8, dur: 30 },
-    { hz: 10, dur: 30 },
+    { hz: 72 / 7, dur: 30 },
     { hz: 12, dur: 30 }
   ];
+  var STROBE_DUTY = 0.3;         // lamp studies use light on 30% of each cycle
   var FADE_IN = 10;
   var FADE_OUT = 5;
   var SETTLE = 0.5;              // ignore frame timing for the first half second
@@ -383,8 +406,22 @@ textarea {
   function lightAt(t, s) {
     var env = envelopeAt(t);
     if (env <= 0) return 0;
-    var dip = 0.5 - 0.5 * Math.cos(2 * Math.PI * cyclesAt(t));
+    var c = cyclesAt(t);
+    var dip;
+    if (s.wave === 'strobe') {
+      // Snap to whole display frames so every flash is the same length.
+      // The flash is centred on the cycle start, where the sound peaks.
+      var n = Math.round(72 / SEGMENTS[segIndexAt(t)].hz);
+      var on = Math.max(1, Math.round(n * STROBE_DUTY));
+      var k = Math.round((c - Math.floor(c)) * n) % n;
+      dip = ((k + Math.floor(on / 2)) % n) < on ? 0 : 1;
+    } else {
+      dip = 0.5 - 0.5 * Math.cos(2 * Math.PI * c);
+    }
     return env * s.brightness * (1 - s.depth * dip);
+  }
+  function fmtHz(hz) {
+    return Math.abs(hz - Math.round(hz)) < 0.01 ? String(Math.round(hz)) : hz.toFixed(1);
   }
   function toRGB(L) {
     var out = [];
@@ -406,11 +443,12 @@ textarea {
   var earR = $('earR');
   var controls = [
     $('brightness'), $('depth'), $('volume'), earL, earR
-  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"]')));
+  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"], input[name="wave"]')));
 
   function readSettings() {
     return {
       sound: document.querySelector('input[name="sound"]:checked').value,
+      wave: document.querySelector('input[name="wave"]:checked').value,
       brightness: Number($('brightness').value) / 100,
       depth: Number($('depth').value) / 100,
       volume: Number($('volume').value) / 100
@@ -500,7 +538,28 @@ textarea {
       oscs.push(lo, hi);
     }
     oscs.forEach(function (o) { o.start(t0); o.stop(t0 + TOTAL + 0.2); });
-    return { master: master, oscs: oscs };
+
+    // Soft ticks before each new part: 1 before part 2, 2 before part 3, 3 before part 4
+    var tickGain = c.createGain();
+    tickGain.gain.value = Math.min(0.5, s.volume * 1.2);
+    tickGain.connect(c.destination);
+    for (var p = 1; p < SEGMENTS.length; p++) {
+      for (var j = 0; j < p; j++) {
+        var at = t0 + segStart[p] - 1.0 + j * 0.22;
+        var tick = c.createOscillator();
+        tick.frequency.value = 1200;
+        var env = c.createGain();
+        env.gain.setValueAtTime(0, at);
+        env.gain.linearRampToValueAtTime(1, at + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.001, at + 0.08);
+        tick.connect(env);
+        env.connect(tickGain);
+        tick.start(at);
+        tick.stop(at + 0.1);
+        oscs.push(tick);
+      }
+    }
+    return { master: master, oscs: oscs, extra: [tickGain] };
   }
 
   function silence(audio) {
@@ -518,7 +577,13 @@ textarea {
       g.setTargetAtTime(0, now, 0.004);
     } catch (e) { /* fall through to stopping oscillators */ }
     audio.oscs.forEach(function (o) { try { o.stop(now + 0.06); } catch (e) {} });
-    setTimeout(function () { try { audio.master.disconnect(); } catch (e) {} }, 300);
+    if (audio.extra) audio.extra.forEach(function (g) {
+      try { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(0, now); } catch (e) {}
+    });
+    setTimeout(function () {
+      try { audio.master.disconnect(); } catch (e) {}
+      if (audio.extra) audio.extra.forEach(function (g) { try { g.disconnect(); } catch (e) {} });
+    }, 300);
   }
 
   // Maps "now" on the page clock to the audio sample currently reaching the ears
@@ -752,7 +817,7 @@ textarea {
     if (!run || run.done) return;
     var t = Math.max(0, run.elapsed);
     var hz = SEGMENTS[segIndexAt(t)].hz;
-    progressEl.textContent = hz + ' pulses per second, ' + fmtTime(t) + ' of ' + fmtTime(TOTAL);
+    progressEl.textContent = 'Part ' + (segIndexAt(t) + 1) + ', ' + fmtHz(hz) + ' pulses per second, ' + fmtTime(t) + ' of ' + fmtTime(TOTAL);
   }
 
   function endPreview() {
@@ -867,7 +932,7 @@ textarea {
       var tr = document.createElement('tr');
       var p = sum.perSeg ? sum.perSeg[i] : null;
       var cells = [
-        seg.hz + ' per second',
+        'Part ' + (i + 1) + ', ' + fmtHz(seg.hz) + ' per second',
         p && p.frames ? String(p.missed) : 'Not reached',
         p && p.frames ? ms(p.worst) : ''
       ];
@@ -879,7 +944,7 @@ textarea {
       rows.appendChild(tr);
     });
 
-    Array.prototype.forEach.call(document.querySelectorAll('input[name="smooth"], input[name="heard"]'), function (el) { el.checked = false; });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="seen"], input[name="worst"], input[name="heard"]'), function (el) { el.checked = false; });
     buildReport();
     $('copyNote').textContent = '';
     resultsEl.hidden = false;
@@ -902,13 +967,13 @@ textarea {
     lines.push('Mode: ' + (r.mode === 'vr' ? 'VR headset' : 'on-screen preview'));
     lines.push('Result: ' + (r.reason === 'complete' ? 'complete' : 'stopped at ' + fmtTime(r.elapsed) + ' (' + r.reason + ')'));
     lines.push('Sound: ' + r.s.sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
-    lines.push('Light: brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
+    lines.push('Light: ' + r.s.wave + ', brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
     if (sum.n) {
       lines.push('Frames: ' + sum.n + ' at ' + sum.fps.toFixed(1) + ' fps (median gap ' + ms(sum.median) + ')');
       lines.push('Missed frames: ' + sum.missed + ' (' + sum.missedPct.toFixed(2) + '%), worst gap ' + ms(sum.worst));
       SEGMENTS.forEach(function (seg, i) {
         var p = sum.perSeg[i];
-        lines.push('  ' + seg.hz + ' Hz: ' + (p.frames ? p.missed + ' missed, worst ' + ms(p.worst) : 'not reached'));
+        lines.push('  Part ' + (i + 1) + ' (' + fmtHz(seg.hz) + ' Hz): ' + (p.frames ? p.missed + ' missed, worst ' + ms(p.worst) : 'not reached'));
       });
     } else {
       lines.push('Frames: none recorded');
@@ -919,13 +984,27 @@ textarea {
         ', output latency ' + (ctx.outputLatency ? Math.round(ctx.outputLatency * 1000) + ' ms' : 'n/a') +
         ', output timestamps ' + (ctx.getOutputTimestamp ? 'yes' : 'no'));
     }
-    lines.push('Smooth glow: ' + answer('smooth'));
+    var worst = answer('worst');
+    lines.push('Light visible: ' + answer('seen'));
+    lines.push('Least even part: ' + (worst === '0' ? 'none' : worst));
     lines.push('Heard pulsing: ' + answer('heard'));
     lines.push('Browser: ' + navigator.userAgent);
     $('report').value = lines.join('\n');
+
+    // Short code, e.g. "VR ST 72.0 0-0-3-0 P3 CC"
+    var letter = function (v) { return v === 'Not answered' ? '?' : v.charAt(0); };
+    var missedList = sum.perSeg ? sum.perSeg.map(function (p) { return p.frames ? p.missed : 'x'; }).join('-') : 'x-x-x-x';
+    $('quick').textContent = [
+      r.mode === 'vr' ? 'VR' : 'PV',
+      r.s.wave === 'strobe' ? 'ST' : 'SM',
+      sum.n ? sum.fps.toFixed(1) : '0',
+      missedList,
+      worst === 'Not answered' ? 'P?' : 'P' + worst,
+      letter(answer('seen')) + letter(answer('heard'))
+    ].join(' ');
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="smooth"], input[name="heard"]'), function (el) {
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="seen"], input[name="worst"], input[name="heard"]'), function (el) {
     el.addEventListener('change', buildReport);
   });
 
