@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Pulse headset test</title>
+<title>Pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -18,7 +18,6 @@
   --accent: #4352C4;
   --accent-ink: #FFFFFF;
   --lens: #15172B;
-  --glow: #BAC6FF;
   --ok: #24704F;
   --ok-bg: #E2F3EA;
   --warn: #7E5300;
@@ -35,7 +34,6 @@
     --accent: #AFBBFF;
     --accent-ink: #191B2C;
     --lens: #0F1020;
-    --glow: #BAC6FF;
     --ok: #8ED2B3;
     --ok-bg: #1F352E;
     --warn: #F1C46E;
@@ -56,7 +54,6 @@ body {
 }
 main { max-width: 38rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
 
-/* Hero: the lens is where the on-screen preview plays */
 .hero { display: flex; align-items: center; gap: 1.75rem; margin-bottom: 2.75rem; }
 .hero-text { flex: 1; min-width: 0; }
 h1 { font-size: 3rem; line-height: 1; letter-spacing: -0.02em; margin: 0 0 0.6rem; font-weight: 700; }
@@ -69,11 +66,8 @@ h1 { font-size: 3rem; line-height: 1; letter-spacing: -0.02em; margin: 0 0 0.6re
   border-radius: 50%;
   border: 1px solid var(--line);
   background-color: var(--lens);
-  background-image: radial-gradient(circle at 50% 46%, #F4F6FF 0%, var(--glow) 30%, rgba(186, 198, 255, 0.25) 55%, rgba(186, 198, 255, 0) 72%);
 }
-.lens.is-live { background-image: none; }
 
-/* Steps are a real sequence, so they get numbers and a connecting rail */
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
 .step { position: relative; padding: 0 0 2.25rem 3.25rem; counter-increment: step; }
 .step::before {
@@ -126,17 +120,21 @@ h1 { font-size: 3rem; line-height: 1; letter-spacing: -0.02em; margin: 0 0 0.6re
   accent-color: var(--accent);
 }
 .choice:has(input:checked) { border-color: var(--accent); }
-.choice strong { display: block; }
+.choice strong { display: inline; }
+.choice .meta { color: var(--muted); }
 .choice .hint { display: block; }
 
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled { opacity: 0.45; }
 legend { font-weight: 700; padding: 0; margin-bottom: 0.5rem; }
 .choices { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+.applies { margin: -1rem 0 1.5rem; }
 
 .slider { margin-bottom: 1.1rem; }
 .slider label { display: flex; justify-content: space-between; gap: 1rem; font-weight: 700; }
 .slider output { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .slider .hint { margin: 0.1rem 0 0; }
+.slider.is-off { opacity: 0.45; }
 input[type="range"] { width: 100%; height: 2rem; margin: 0.2rem 0 0; accent-color: var(--accent); }
 
 .row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
@@ -154,7 +152,7 @@ input[type="range"] { width: 100%; height: 2rem; margin: 0.2rem 0 0; accent-colo
 }
 .btn.secondary { background: transparent; color: var(--accent); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 .status {
   margin: 1rem 0 0;
@@ -164,11 +162,11 @@ input[type="range"] { width: 100%; height: 2rem; margin: 0.2rem 0 0; accent-colo
   background: var(--surface);
   border: 1px solid var(--line);
 }
-.status.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
-.status.warn { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
+.status.ok, .note.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
+.status.warn, .note.warn { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
+.note { margin: 0 0 1rem; padding: 0.6rem 0.85rem; border-radius: 0.6rem; font-size: 1rem; }
 .progress { margin: 0.75rem 0 0; font-variant-numeric: tabular-nums; }
 
-/* Results */
 .results {
   margin-top: 0.5rem;
   padding: 1.5rem;
@@ -178,27 +176,32 @@ input[type="range"] { width: 100%; height: 2rem; margin: 0.2rem 0 0; accent-colo
 }
 .verdict { font-size: 1.75rem; line-height: 1.2; margin: 0 0 0.4rem; }
 .verdict:focus { outline: none; }
-.stats { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 1.25rem; margin: 1.1rem 0 1.25rem; }
-.stats dt { color: var(--muted); }
-.stats dd { margin: 0; font-variant-numeric: tabular-nums; }
-.table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 0.45rem 1rem 0.45rem 0; border-bottom: 1px solid var(--line); }
-th { font-weight: 700; }
 .q { margin-bottom: 1.1rem; }
 .pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .pill { position: relative; cursor: pointer; }
 .pill input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .pill span { display: inline-block; padding: 0.45rem 1rem; border-radius: 999px; border: 1.5px solid var(--line); }
-.swatch { display: inline-block; width: 0.95rem; height: 0.95rem; border-radius: 50%; margin-right: 0.45rem; vertical-align: -0.12rem; box-shadow: 0 0 0 1px var(--line); }
-.color-pills { margin-bottom: 0.4rem; }
 .pill input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
 .pill input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
-.report-label { display: block; font-weight: 700; margin-top: 0.5rem; }
+.pill input:disabled + span { opacity: 0.45; }
+.swatch { display: inline-block; width: 0.95rem; height: 0.95rem; border-radius: 50%; margin-right: 0.45rem; vertical-align: -0.12rem; box-shadow: 0 0 0 1px var(--line); }
+.color-pills { margin-bottom: 0.4rem; }
+
+details { margin: 1rem 0 1.25rem; }
+summary { cursor: pointer; font-weight: 700; }
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 1.25rem; margin: 0.75rem 0 1rem; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.45rem 1rem 0.45rem 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 700; }
+.report-label { display: block; font-weight: 700; margin: 0.5rem 0 0; }
+.quick { margin: 0.35rem 0 0; font-size: 1.375rem; font-weight: 700; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; word-break: break-word; }
 textarea {
   display: block;
   width: 100%;
-  min-height: 12rem;
+  min-height: 11rem;
   margin: 0.5rem 0 1rem;
   padding: 0.75rem;
   font: 0.9rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -208,7 +211,6 @@ textarea {
   border-radius: 0.6rem;
   resize: vertical;
 }
-.quick { margin: 0.35rem 0 0; font-size: 1.375rem; font-weight: 700; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
 .footnote { margin: 2.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
 
 @media (max-width: 30rem) {
@@ -227,47 +229,59 @@ textarea {
   <header class="hero">
     <div class="hero-text">
       <h1>Pulse</h1>
-      <p class="lede"><strong>Headset test, version 0.3.</strong> Checks that your Quest can play smooth, synced light and sound before the full app gets built.</p>
+      <p class="lede"><strong>Version 0.4.</strong> Light and sound sessions for your Quest, built on the timing you tested.</p>
     </div>
     <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
   </header>
 
-  <noscript><p class="status warn">This test needs JavaScript turned on.</p></noscript>
+  <noscript><p class="status warn">Pulse needs JavaScript turned on.</p></noscript>
 
   <ol class="steps">
     <li class="step">
       <h2>Read before you start</h2>
       <ul class="rules">
-        <li>Don’t use this if you’ve ever had a seizure, been told you have epilepsy, or been bothered by flashing lights.</li>
-        <li>Sit down, keep your eyes open, and stop if you feel dizzy, sick or get a headache.</li>
-        <li>In VR, any controller button stops everything instantly. On this screen, press Stop or the Esc key.</li>
+        <li>Don’t use this if you’ve ever had a seizure, been told you have epilepsy, get migraines, or have been bothered by flashing lights.</li>
+        <li>Sit or lie down, and stop if you feel dizzy, sick, get a headache, or notice any twitching.</li>
+        <li>Seeing patterns, colors or motion is normal. In VR, any controller button stops everything instantly.</li>
       </ul>
-      <label class="check"><input type="checkbox" id="ack"><span>I’ve read this and I’m sitting down.</span></label>
+      <label class="check"><input type="checkbox" id="ack"><span>I’ve read this and I’m sitting or lying down.</span></label>
     </li>
 
     <li class="step">
       <h2>Check your earbuds</h2>
-      <p>Plug wired earbuds into the headset. Each button plays a short tone in one ear only.</p>
+      <p>Each button plays a short tone in one ear only.</p>
       <div class="row">
         <button class="btn secondary" id="earL" type="button">Play left ear</button>
         <button class="btn secondary" id="earR" type="button">Play right ear</button>
       </div>
-      <p class="hint" style="margin-top:0.75rem">If a tone plays in the wrong ear, swap the earbuds before testing binaural sound.</p>
+      <p class="hint" style="margin-top:0.75rem">If a tone plays in the wrong ear, swap the earbuds before using binaural sound.</p>
     </li>
 
     <li class="step">
-      <h2>Choose test settings</h2>
+      <h2>Pick a session</h2>
+      <fieldset class="choices" id="programSet">
+        <legend class="hint" style="font-weight:400">Sessions end on their own and fade in and out gently.</legend>
+        <div id="programList" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+      </fieldset>
+    </li>
+
+    <li class="step">
+      <h2>Adjust settings</h2>
       <fieldset class="choices" id="soundSet">
-        <legend>Sound</legend>
+        <legend>Beat tones</legend>
         <label class="choice"><input type="radio" name="sound" value="binaural" checked><span><strong>Binaural</strong><span class="hint">A slightly different tone in each ear. Needs earbuds.</span></span></label>
         <label class="choice"><input type="radio" name="sound" value="monaural"><span><strong>Monaural</strong><span class="hint">Both tones mixed into both ears. Pulses more strongly in studies.</span></span></label>
         <label class="choice"><input type="radio" name="sound" value="isochronic"><span><strong>Isochronic</strong><span class="hint">One tone that fades on and off.</span></span></label>
       </fieldset>
+      <p class="hint applies" id="soundNote" hidden></p>
+
       <fieldset class="choices" id="waveSet">
         <legend>Light</legend>
         <label class="choice"><input type="radio" name="wave" value="strobe" checked><span><strong>Strobe</strong><span class="hint">Sharp flashes, on about a third of the time, like the lamps used in studies.</span></span></label>
         <label class="choice"><input type="radio" name="wave" value="smooth"><span><strong>Smooth</strong><span class="hint">A soft glow that rises and falls.</span></span></label>
       </fieldset>
+      <p class="hint applies" id="waveNote" hidden></p>
+
       <fieldset class="q" id="colorSet" style="margin-bottom:1.5rem">
         <legend>Color</legend>
         <div class="pills color-pills">
@@ -279,11 +293,12 @@ textarea {
         </div>
         <p class="hint" style="margin:0">Blue looks dimmer than the others at the same setting. Red isn’t offered because it raises seizure risk.</p>
       </fieldset>
+
       <div class="slider">
         <label for="brightness">Brightness <output id="brightnessOut" for="brightness">35%</output></label>
         <input type="range" id="brightness" min="10" max="50" step="5" value="35">
       </div>
-      <div class="slider">
+      <div class="slider" id="depthWrap">
         <label for="depth">Pulse strength <output id="depthOut" for="depth">100%</output></label>
         <input type="range" id="depth" min="30" max="100" step="10" value="100">
         <p class="hint">How far the light dims between pulses. At 100% it goes fully dark.</p>
@@ -295,9 +310,8 @@ textarea {
     </li>
 
     <li class="step">
-      <h2>Run the test</h2>
-      <p>The test runs for 2 minutes in four 30-second parts: 6, 8, 10.3 and 12 pulses per second. It fades in over the first 10 seconds and stops on its own.</p>
-      <p class="hint">A soft tick marks each new part: one tick before part 2, two before part 3, three before part 4.</p>
+      <h2>Start</h2>
+      <p id="startSummary"></p>
       <div class="row">
         <button class="btn" id="vrBtn" type="button" disabled>Enter VR</button>
         <button class="btn secondary" id="previewBtn" type="button" disabled>Preview on this screen</button>
@@ -310,78 +324,53 @@ textarea {
 
   <section class="results" id="results" hidden aria-labelledby="verdict">
     <h2 class="verdict" id="verdict" tabindex="-1"></h2>
-    <p id="verdictNote" style="margin:0"></p>
-    <dl class="stats" id="stats"></dl>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th scope="col">Rate</th><th scope="col">Missed frames</th><th scope="col">Worst gap</th></tr></thead>
-        <tbody id="segRows"></tbody>
-      </table>
-    </div>
-    <fieldset class="q">
-      <legend>Was the pulsing light easy to see?</legend>
-      <div class="pills">
-        <label class="pill"><input type="radio" name="seen" value="Clearly"><span>Clearly</span></label>
-        <label class="pill"><input type="radio" name="seen" value="Faintly"><span>Faintly</span></label>
-        <label class="pill"><input type="radio" name="seen" value="Not at all"><span>Not at all</span></label>
+    <p id="verdictNote" style="margin:0 0 1.25rem"></p>
+    <div id="questions"></div>
+    <p class="note" id="answerNote" hidden></p>
+    <details id="details">
+      <summary>Playback details</summary>
+      <dl class="stats" id="stats"></dl>
+      <div class="table-wrap" id="segWrap">
+        <table>
+          <thead><tr><th scope="col">Part</th><th scope="col">Missed frames</th><th scope="col">Worst gap</th></tr></thead>
+          <tbody id="segRows"></tbody>
+        </table>
       </div>
-    </fieldset>
-    <fieldset class="q">
-      <legend>Which part looked least even?</legend>
-      <div class="pills">
-        <label class="pill"><input type="radio" name="worst" value="1"><span>Part 1</span></label>
-        <label class="pill"><input type="radio" name="worst" value="2"><span>Part 2</span></label>
-        <label class="pill"><input type="radio" name="worst" value="3"><span>Part 3</span></label>
-        <label class="pill"><input type="radio" name="worst" value="4"><span>Part 4</span></label>
-        <label class="pill"><input type="radio" name="worst" value="0"><span>All looked even</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="q">
-      <legend>Could you hear the sound pulsing?</legend>
-      <div class="pills">
-        <label class="pill"><input type="radio" name="heard" value="Clearly"><span>Clearly</span></label>
-        <label class="pill"><input type="radio" name="heard" value="Faintly"><span>Faintly</span></label>
-        <label class="pill"><input type="radio" name="heard" value="Not at all"><span>Not at all</span></label>
-      </div>
-    </fieldset>
+    </details>
     <p class="report-label">Quick code</p>
     <p class="quick" id="quick"></p>
     <p class="hint" style="margin:0.25rem 0 1rem">If copying is a hassle, type just this to Claude.</p>
     <label class="report-label" for="report">Full report</label>
-    <p class="hint" style="margin:0.25rem 0 0">Send this to Claude so the next build can be tuned to your headset.</p>
     <textarea id="report" readonly></textarea>
     <div class="row">
       <button class="btn" id="copyBtn" type="button">Copy report</button>
-      <button class="btn secondary" id="againBtn" type="button">Run again</button>
+      <button class="btn secondary" id="againBtn" type="button">Back to sessions</button>
     </div>
     <p class="hint" id="copyNote" role="status" style="margin:0.75rem 0 0"></p>
   </section>
 
-  <p class="footnote">Light is capped at 12 pulses per second and never uses red. Nothing is saved or sent anywhere.</p>
+  <p class="footnote">Light is capped at 12 pulses per second and never uses red. Your settings and best rate are saved in this browser only. Nothing is sent anywhere.</p>
 </main>
 
 <script>
 (function () {
   'use strict';
 
-  /* ---------- Test definition ---------- */
-  var VERSION = '0.3';
-  var CARRIER_HZ = 400;          // binaural beats are heard best around 400 to 500 Hz
-  var MAX_LIGHT_HZ = 12;         // safety cap: stays below the 15 to 25 Hz risk band
-  var QUEST1_FRAME_MS = 1000 / 72;
-  // Every rate divides the Quest 1's 72 Hz refresh into a whole number of frames
-  // (12, 9, 7 and 6), so each pulse is drawn identically. 10 Hz would be 7.2 frames.
-  var SEGMENTS = [
-    { hz: 6, dur: 30 },
-    { hz: 8, dur: 30 },
-    { hz: 72 / 7, dur: 30 },
-    { hz: 12, dur: 30 }
-  ];
-  var STROBE_DUTY = 0.3;         // lamp studies use light on 30% of each cycle
-  var FADE_IN = 10;
-  var FADE_OUT = 5;
-  var SETTLE = 0.5;              // ignore frame timing for the first half second
-  // Linear-light color multipliers. No saturated red: it raises seizure risk.
+  /* ================= Constants and safety limits ================= */
+  var VERSION = '0.4';
+  var FRAME_HZ = 72;            // Quest 1 refresh rate
+  var CARRIER_HZ = 400;         // binaural beats are heard best around 400 to 500 Hz
+  var MAX_LIGHT_HZ = 12;        // stays below the 15 to 25 Hz seizure-risk band
+  var MAX_BEAT_HZ = 20;         // sound-only beats may go a little higher
+  var MAX_SESSION_S = 30 * 60;
+  var STROBE_DUTY = 0.3;        // lamp studies use light on 30% of each cycle
+  var SETTLE = 0.5;             // ignore frame timing for the first half second
+
+  // Light rates must divide 72 into whole frames so every pulse is drawn the same
+  function exact(framesPerPulse) { return FRAME_HZ / framesPerPulse; }
+  var BEST_RATES = [exact(9), exact(8), exact(7), exact(6)];   // 8, 9, 10.3, 12 Hz
+  var DEFAULT_RATE = exact(7);
+
   var COLORS = {
     white: { name: 'cool white', code: 'CW', tint: [0.84, 0.89, 1.0] },
     warm:  { name: 'warm white', code: 'WW', tint: [1.0, 0.80, 0.56] },
@@ -389,50 +378,116 @@ textarea {
     teal:  { name: 'teal',       code: 'TL', tint: [0.12, 0.88, 0.80] },
     blue:  { name: 'blue',       code: 'BL', tint: [0.20, 0.40, 1.0] }
   };
-  var currentTint = COLORS.white.tint;
 
-  var TOTAL = 0;
-  var segStart = [];
-  var segCycles = [];
-  (function () {
-    var t = 0, cycles = 0;
-    for (var i = 0; i < SEGMENTS.length; i++) {
-      if (SEGMENTS[i].hz > MAX_LIGHT_HZ) throw new Error('Segment rate above safety cap');
-      segStart.push(t);
-      segCycles.push(cycles);
-      t += SEGMENTS[i].dur;
-      cycles += SEGMENTS[i].hz * SEGMENTS[i].dur;
-    }
-    TOTAL = t;
-  })();
+  function fmtHz(hz) {
+    return Math.abs(hz - Math.round(hz)) < 0.01 ? String(Math.round(hz)) : hz.toFixed(1);
+  }
 
-  function segIndexAt(t) {
-    for (var i = SEGMENTS.length - 1; i >= 0; i--) {
-      if (t >= segStart[i]) return i;
+  /* ================= Session programs ================= */
+  var PROGRAMS = {
+    unwind: {
+      name: 'Unwind', code: 'UW', light: 'flicker', sound: 'beats', fadeIn: 30, fadeOut: 30,
+      desc: function () { return 'Starts around 10 pulses per second and slows to 6, for winding down.'; },
+      segments: function () {
+        return [
+          { dur: 180, hz: exact(7) }, { dur: 150, hz: exact(8) }, { dur: 150, hz: exact(9) },
+          { dur: 150, hz: exact(10) }, { dur: 120, hz: exact(11) }, { dur: 150, hz: exact(12) }
+        ];
+      },
+      questions: ['relaxed', 'patterns', 'comfort']
+    },
+    visuals: {
+      name: 'Visuals', code: 'VI', light: 'flicker', sound: 'rhythm', fadeIn: 30, fadeOut: 20,
+      desc: function (pref) { return 'A steady flicker at ' + fmtHz(pref) + ' pulses per second with a rhythm track locked to it. Keep your eyes open.'; },
+      segments: function (pref) { return [{ dur: 900, hz: pref }]; },
+      questions: ['patterns', 'relaxed', 'comfort']
+    },
+    ganzfeld: {
+      name: 'Ganzfeld', code: 'GZ', light: 'steady', steadyLevel: 1, sound: 'noise', fadeIn: 60, fadeOut: 20, suggestColor: 'green',
+      desc: function () { return 'No flicker. An even glow fills your view while brown noise plays. Keep your eyes open and let your gaze rest.'; },
+      segments: function () { return [{ dur: 1200, hz: 0 }]; },
+      questions: ['relaxed', 'imagery', 'comfort']
+    },
+    prework: {
+      name: 'Before work', code: 'BW', light: 'steady', steadyLevel: 0.35, sound: 'beats', fadeIn: 20, fadeOut: 20,
+      desc: function () { return 'Beat tones that settle at 14 per second, with a dim steady glow. Use it right before a task.'; },
+      segments: function () { return [{ dur: 120, hz: 10 }, { dur: 600, hz: 14 }]; },
+      questions: ['focused', 'comfort']
+    },
+    sweep: {
+      name: 'Find your rate', code: 'FR', light: 'flicker', sound: 'beats', fadeIn: 6, fadeOut: 5, ticks: true,
+      desc: function () { return 'Four 1-minute parts at 8, 9, 10.3 and 12 pulses per second. Afterwards you pick the one that felt strongest, and Visuals uses it.'; },
+      segments: function () { return [{ dur: 60, hz: exact(9) }, { dur: 60, hz: exact(8) }, { dur: 60, hz: exact(7) }, { dur: 60, hz: exact(6) }]; },
+      questions: ['strongest', 'patterns', 'comfort']
+    },
+    test: {
+      name: 'Headset test', code: 'HT', light: 'flicker', sound: 'beats', fadeIn: 10, fadeOut: 5, ticks: true,
+      desc: function () { return 'The 2-minute timing check, with a frame-by-frame report.'; },
+      segments: function () { return [{ dur: 30, hz: 6 }, { dur: 30, hz: 8 }, { dur: 30, hz: exact(7) }, { dur: 30, hz: 12 }]; },
+      questions: ['seen', 'worst', 'heard']
     }
+  };
+  var PROGRAM_ORDER = ['unwind', 'visuals', 'ganzfeld', 'prework', 'sweep', 'test'];
+
+  var QUESTIONS = {
+    seen:      { label: 'Was the pulsing light easy to see?', opts: ['Clearly', 'Faintly', 'Not at all'] },
+    heard:     { label: 'Could you hear the sound pulsing?', opts: ['Clearly', 'Faintly', 'Not at all'] },
+    worst:     { label: 'Which part looked least even?', parts: true, extra: 'All looked even' },
+    strongest: { label: 'Which part felt strongest?', parts: true, extra: 'Couldn’t tell' },
+    relaxed:   { label: 'How do you feel compared with before?', opts: ['More relaxed', 'About the same', 'Less relaxed'] },
+    focused:   { label: 'How focused do you feel?', opts: ['More focused', 'About the same', 'Less focused'] },
+    patterns:  { label: 'Did you see patterns or motion?', opts: ['Yes', 'A little', 'No'] },
+    imagery:   { label: 'Did you see or hear anything that wasn’t really there?', opts: ['Yes', 'A little', 'No'] },
+    comfort:   { label: 'Was anything uncomfortable?', opts: ['No', 'A little', 'Yes'] }
+  };
+
+  function buildTimeline(prog, pref) {
+    var segs = prog.segments(pref);
+    var tl = { segs: segs, start: [], cycles: [], total: 0 };
+    var t = 0, c = 0;
+    for (var i = 0; i < segs.length; i++) {
+      var hz = segs[i].hz;
+      if (prog.light === 'flicker') {
+        if (hz > MAX_LIGHT_HZ + 1e-9) throw new Error('Light rate above safety cap');
+        var frames = FRAME_HZ / hz;
+        if (Math.abs(frames - Math.round(frames)) > 1e-6) throw new Error('Light rate does not fit whole frames');
+      }
+      if (hz > MAX_BEAT_HZ) throw new Error('Beat rate above cap');
+      tl.start.push(t);
+      tl.cycles.push(c);
+      t += segs[i].dur;
+      c += hz * segs[i].dur;
+    }
+    tl.total = t;
+    if (t > MAX_SESSION_S) throw new Error('Session longer than cap');
+    return tl;
+  }
+  function segIndexAt(t, tl) {
+    for (var i = tl.segs.length - 1; i >= 0; i--) if (t >= tl.start[i]) return i;
     return 0;
   }
-  // Pulse cycles elapsed by time t. Audio frequencies follow the same schedule,
-  // so the light's phase matches the sound's beat phase.
-  function cyclesAt(t) {
-    var i = segIndexAt(t);
-    return segCycles[i] + SEGMENTS[i].hz * (t - segStart[i]);
+  function cyclesAt(t, tl) {
+    var i = segIndexAt(t, tl);
+    return tl.cycles[i] + tl.segs[i].hz * (t - tl.start[i]);
   }
-  function envelopeAt(t) {
-    if (t <= 0 || t >= TOTAL) return 0;
-    return Math.min(1, t / FADE_IN, (TOTAL - t) / FADE_OUT);
+  function envelopeAt(t, run) {
+    var total = run.tl.total;
+    if (t <= 0 || t >= total) return 0;
+    return Math.min(1, t / run.prog.fadeIn, (total - t) / run.prog.fadeOut);
   }
-  // Linear luminance. Peaks when the cycle count is a whole number,
-  // which is when the two tones line up and the beat is loudest.
-  function lightAt(t, s) {
-    var env = envelopeAt(t);
+
+  // Linear luminance for time t. Flashes are centred on whole cycles,
+  // which is where the beat tones line up and sound loudest.
+  function lightAt(t, run) {
+    var env = envelopeAt(t, run);
     if (env <= 0) return 0;
-    var c = cyclesAt(t);
+    var s = run.s, prog = run.prog;
+    if (prog.light === 'steady') return env * s.brightness * prog.steadyLevel;
+    var i = segIndexAt(t, run.tl);
+    var c = cyclesAt(t, run.tl);
     var dip;
     if (s.wave === 'strobe') {
-      // Snap to whole display frames so every flash is the same length.
-      // The flash is centred on the cycle start, where the sound peaks.
-      var n = Math.round(72 / SEGMENTS[segIndexAt(t)].hz);
+      var n = Math.round(FRAME_HZ / run.tl.segs[i].hz);
       var on = Math.max(1, Math.round(n * STROBE_DUTY));
       var k = Math.round((c - Math.floor(c)) * n) % n;
       dip = ((k + Math.floor(on / 2)) % n) < on ? 0 : 1;
@@ -441,16 +496,35 @@ textarea {
     }
     return env * s.brightness * (1 - s.depth * dip);
   }
-  function fmtHz(hz) {
-    return Math.abs(hz - Math.round(hz)) < 0.01 ? String(Math.round(hz)) : hz.toFixed(1);
-  }
+
+  var currentTint = COLORS.white.tint;
   function toRGB(L) {
     var out = [];
     for (var i = 0; i < 3; i++) out.push(Math.pow(Math.max(0, L * currentTint[i]), 1 / 2.2));
     return out;
   }
 
-  /* ---------- Elements ---------- */
+  /* ================= Saved settings ================= */
+  var STORE_KEY = 'pulse.v1';
+  var store = (function () {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      var parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) { return {}; }
+  })();
+  function saveStore() {
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+  function prefRate() {
+    var r = Number(store.prefRate);
+    for (var i = 0; i < BEST_RATES.length; i++) {
+      if (Math.abs(BEST_RATES[i] - r) < 1e-6) return BEST_RATES[i];
+    }
+    return DEFAULT_RATE;
+  }
+
+  /* ================= Elements ================= */
   function $(id) { return document.getElementById(id); }
   var ack = $('ack');
   var lens = $('lens');
@@ -462,40 +536,146 @@ textarea {
   var resultsEl = $('results');
   var earL = $('earL');
   var earR = $('earR');
-  var controls = [
-    $('brightness'), $('depth'), $('volume'), earL, earR
-  ].concat(Array.prototype.slice.call(document.querySelectorAll('input[name="sound"], input[name="wave"], input[name="color"]')));
+
+  function radios(name) { return Array.prototype.slice.call(document.querySelectorAll('input[name="' + name + '"]')); }
+  function checkedValue(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+  function setRadio(name, value) {
+    radios(name).forEach(function (el) { el.checked = el.value === value; });
+  }
+
+  // Build the session list
+  (function () {
+    var list = $('programList');
+    PROGRAM_ORDER.forEach(function (id) {
+      var prog = PROGRAMS[id];
+      var label = document.createElement('label');
+      label.className = 'choice';
+      var input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'program';
+      input.value = id;
+      var body = document.createElement('span');
+      var strong = document.createElement('strong');
+      strong.textContent = prog.name;
+      var meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.id = 'meta-' + id;
+      var hint = document.createElement('span');
+      hint.className = 'hint';
+      hint.id = 'desc-' + id;
+      body.appendChild(strong);
+      body.appendChild(meta);
+      body.appendChild(hint);
+      label.appendChild(input);
+      label.appendChild(body);
+      list.appendChild(label);
+    });
+  })();
+
+  function refreshProgramText() {
+    var pref = prefRate();
+    PROGRAM_ORDER.forEach(function (id) {
+      var prog = PROGRAMS[id];
+      var tl = buildTimeline(prog, pref);
+      $('meta-' + id).textContent = ', ' + Math.round(tl.total / 60) + ' min';
+      $('desc-' + id).textContent = prog.desc(pref);
+    });
+  }
+
+  var controls = [$('brightness'), $('depth'), $('volume'), earL, earR]
+    .concat(radios('sound'), radios('wave'), radios('color'), radios('program'));
 
   function readSettings() {
     return {
-      sound: document.querySelector('input[name="sound"]:checked').value,
-      wave: document.querySelector('input[name="wave"]:checked').value,
-      color: document.querySelector('input[name="color"]:checked').value,
+      program: checkedValue('program'),
+      sound: checkedValue('sound'),
+      wave: checkedValue('wave'),
+      color: checkedValue('color'),
       brightness: Number($('brightness').value) / 100,
       depth: Number($('depth').value) / 100,
       volume: Number($('volume').value) / 100
     };
   }
+
+  function saveSettings() {
+    var s = readSettings();
+    store.settings = {
+      program: s.program, sound: s.sound, wave: s.wave, color: s.color,
+      brightness: $('brightness').value, depth: $('depth').value, volume: $('volume').value
+    };
+    saveStore();
+  }
+
+  function restoreSettings() {
+    var saved = store.settings || {};
+    if (saved.program && PROGRAMS[saved.program]) setRadio('program', saved.program);
+    else setRadio('program', store.prefRate ? 'unwind' : 'sweep');
+    ['sound', 'wave', 'color'].forEach(function (name) {
+      if (saved[name] && radios(name).some(function (el) { return el.value === saved[name]; })) setRadio(name, saved[name]);
+    });
+    ['brightness', 'depth', 'volume'].forEach(function (id) {
+      var input = $(id), v = Number(saved[id]);
+      if (saved[id] !== undefined && v >= Number(input.min) && v <= Number(input.max)) input.value = String(v);
+      $(id + 'Out').textContent = input.value + '%';
+    });
+  }
+
   ['brightness', 'depth', 'volume'].forEach(function (id) {
     var input = $(id), out = $(id + 'Out');
     input.addEventListener('input', function () { out.textContent = input.value + '%'; });
+    input.addEventListener('change', saveSettings);
+  });
+  radios('sound').concat(radios('wave')).forEach(function (el) { el.addEventListener('change', saveSettings); });
+  radios('color').forEach(function (el) {
+    el.addEventListener('change', function () { updateLensColor(); saveSettings(); });
+  });
+  radios('program').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var prog = PROGRAMS[el.value];
+      if (prog.suggestColor) { setRadio('color', prog.suggestColor); updateLensColor(); }
+      applyProgramUI();
+      saveSettings();
+    });
   });
 
   function updateLensColor() {
-    var t = COLORS[document.querySelector('input[name="color"]:checked').value].tint;
+    var t = COLORS[checkedValue('color')].tint;
     var rgb = t.map(function (v) { return Math.round(Math.pow(v, 1 / 2.2) * 255); }).join(',');
     lens.style.backgroundImage = 'radial-gradient(circle at 50% 46%, rgba(' + rgb + ',1) 0%, rgba(' + rgb + ',0.85) 30%, rgba(' + rgb + ',0.25) 55%, rgba(' + rgb + ',0) 72%)';
   }
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="color"]'), function (el) {
-    el.addEventListener('change', updateLensColor);
-  });
+
+  function applyProgramUI() {
+    var prog = PROGRAMS[checkedValue('program')];
+    var running = !!(run && !run.done);
+    var beats = prog.sound === 'beats';
+    var flicker = prog.light === 'flicker';
+    $('soundSet').disabled = !beats || running;
+    $('soundNote').hidden = beats;
+    $('soundNote').textContent = prog.sound === 'rhythm'
+      ? 'This session plays its own rhythm track, timed to the light.'
+      : 'This session plays brown noise instead of beat tones.';
+    $('waveSet').disabled = !flicker || running;
+    $('waveNote').hidden = flicker;
+    $('waveNote').textContent = 'This session uses a steady glow with no flicker, so light style and pulse strength don’t apply.';
+    $('depth').disabled = !flicker || running;
+    $('depthWrap').className = 'slider' + (flicker ? '' : ' is-off');
+
+    var tl = buildTimeline(prog, prefRate());
+    var mins = Math.round(tl.total / 60);
+    var text = prog.name + ' runs for ' + mins + (mins === 1 ? ' minute' : ' minutes') + ' and stops on its own.';
+    if (prog.ticks) text += ' A soft tick marks each new part: one before part 2, two before part 3, three before part 4.';
+    $('startSummary').textContent = text;
+  }
 
   function setStatus(text, kind) {
     statusEl.textContent = text;
     statusEl.className = 'status' + (kind ? ' ' + kind : '');
   }
 
-  /* ---------- Audio ---------- */
+  /* ================= Audio ================= */
   var ctx = null;
   function getCtx() {
     if (!ctx) {
@@ -515,68 +695,195 @@ textarea {
     return curve;
   }
 
-  function buildAudio(s, t0) {
-    var c = ctx;
-    var master = c.createGain();
-    master.gain.setValueAtTime(0, t0);
-    master.gain.linearRampToValueAtTime(s.volume, t0 + FADE_IN);
-    master.gain.setValueAtTime(s.volume, t0 + TOTAL - FADE_OUT);
-    master.gain.linearRampToValueAtTime(0, t0 + TOTAL);
-    master.connect(c.destination);
+  function scheduleSegments(param, tl, t0, fn) {
+    for (var i = 0; i < tl.segs.length; i++) param.setValueAtTime(fn(tl.segs[i].hz), t0 + tl.start[i]);
+  }
 
-    function schedule(param, fn) {
-      for (var i = 0; i < SEGMENTS.length; i++) {
-        param.setValueAtTime(fn(SEGMENTS[i].hz), t0 + segStart[i]);
-      }
-    }
-
-    var oscs = [];
-    if (s.sound === 'isochronic') {
+  function buildBeats(c, out, run, t0, bag) {
+    var tl = run.tl, end = t0 + tl.total + 0.2;
+    if (run.s.sound === 'isochronic') {
       var carrier = c.createOscillator();
       carrier.frequency.value = CARRIER_HZ;
       var amp = c.createGain();
       amp.gain.value = 0;
       var lfo = c.createOscillator();
-      // Cosine wave so the loudest point lines up with the brightest point
       lfo.setPeriodicWave(c.createPeriodicWave(new Float32Array([0, 1]), new Float32Array([0, 0]), { disableNormalization: true }));
-      schedule(lfo.frequency, function (hz) { return hz; });
+      scheduleSegments(lfo.frequency, tl, t0, function (hz) { return hz; });
       var shaper = c.createWaveShaper();
       shaper.curve = softSquareCurve(3);
       lfo.connect(shaper);
       shaper.connect(amp.gain);
       carrier.connect(amp);
-      amp.connect(master);
-      oscs.push(carrier, lfo);
+      amp.connect(out);
+      bag.sources.push(carrier, lfo);
     } else {
-      var lo = c.createOscillator();
-      var hi = c.createOscillator();
-      schedule(lo.frequency, function (hz) { return CARRIER_HZ - hz / 2; });
-      schedule(hi.frequency, function (hz) { return CARRIER_HZ + hz / 2; });
+      var lo = c.createOscillator(), hi = c.createOscillator();
+      scheduleSegments(lo.frequency, tl, t0, function (hz) { return CARRIER_HZ - hz / 2; });
+      scheduleSegments(hi.frequency, tl, t0, function (hz) { return CARRIER_HZ + hz / 2; });
       var gLo = c.createGain(), gHi = c.createGain();
       gLo.gain.value = 0.5;
       gHi.gain.value = 0.5;
       lo.connect(gLo);
       hi.connect(gHi);
-      if (s.sound === 'binaural') {
+      if (run.s.sound === 'binaural') {
         var merger = c.createChannelMerger(2);
         gLo.connect(merger, 0, 0);
         gHi.connect(merger, 0, 1);
-        merger.connect(master);
+        merger.connect(out);
       } else {
-        gLo.connect(master);
-        gHi.connect(master);
+        gLo.connect(out);
+        gHi.connect(out);
       }
-      oscs.push(lo, hi);
+      bag.sources.push(lo, hi);
     }
-    oscs.forEach(function (o) { o.start(t0); o.stop(t0 + TOTAL + 0.2); });
+    bag.sources.forEach(function (o) { o.start(t0); o.stop(end); });
+  }
 
-    // Soft ticks before each new part: 1 before part 2, 2 before part 3, 3 before part 4
+  // Brown noise, generated once, with a crossfaded loop point so it never clicks
+  var brownBuffer = null;
+  function getBrownBuffer(c) {
+    if (brownBuffer && brownBuffer.sampleRate === c.sampleRate) return brownBuffer;
+    var len = Math.floor(c.sampleRate * 12);
+    var fade = Math.floor(c.sampleRate * 0.5);
+    var buf = c.createBuffer(2, len, c.sampleRate);
+    for (var ch = 0; ch < 2; ch++) {
+      var gen = new Float32Array(len + fade), last = 0, i;
+      for (i = 0; i < len + fade; i++) {
+        last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+        gen[i] = Math.max(-1, Math.min(1, last * 3.5));
+      }
+      var d = buf.getChannelData(ch);
+      for (i = 0; i < len; i++) {
+        d[i] = i < fade ? gen[i] * (i / fade) + gen[len + i] * (1 - i / fade) : gen[i];
+      }
+    }
+    brownBuffer = buf;
+    return buf;
+  }
+
+  function buildNoise(c, out, run, t0, bag) {
+    var src = c.createBufferSource();
+    src.buffer = getBrownBuffer(c);
+    src.loop = true;
+    var g = c.createGain();
+    g.gain.value = 0.8;
+    src.connect(g);
+    g.connect(out);
+    src.start(t0);
+    src.stop(t0 + run.tl.total + 0.2);
+    bag.sources.push(src);
+  }
+
+  function whiteBuffer(c, seconds) {
+    var len = Math.floor(c.sampleRate * seconds);
+    var buf = c.createBuffer(1, len, c.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
+  // Pick how many flashes make one beat, aiming for a tempo near 124 BPM
+  function pickFlashesPerBeat(hz) {
+    var best = 4, bestDiff = 1e9;
+    for (var d = 2; d <= 8; d++) {
+      var diff = Math.abs((hz * 60) / d - 124);
+      if (diff < bestDiff) { bestDiff = diff; best = d; }
+    }
+    return best;
+  }
+
+  // A soft generated rhythm track whose kick lands on every few flashes
+  function buildRhythm(c, out, run, t0, bag) {
+    var hz = run.tl.segs[0].hz;
+    var perBeat = pickFlashesPerBeat(hz);
+    var beat = perBeat / hz;
+    var total = run.tl.total;
+    run.rhythm = { bpm: 60 / beat, perBeat: perBeat };
+
+    var bus = c.createGain();
+    bus.gain.value = 0.9;
+    bus.connect(out);
+
+    // Pad: three soft voices that move through Am, F, C, G every two bars
+    var pad = c.createGain();
+    pad.gain.value = 0.07;
+    var lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 900;
+    lp.Q.value = 0.5;
+    pad.connect(lp);
+    lp.connect(bus);
+    var chords = [[110.0, 164.81, 261.63], [87.31, 130.81, 220.0], [130.81, 196.0, 329.63], [98.0, 146.83, 246.94]];
+    var voices = [0, 1, 2].map(function (i) {
+      var o = c.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = chords[0][i];
+      o.connect(pad);
+      o.start(t0);
+      o.stop(t0 + total + 0.2);
+      bag.sources.push(o);
+      return o;
+    });
+    var chordLen = beat * 8;
+    for (var k = 0, tt = t0; tt < t0 + total; k++, tt += chordLen) {
+      var chord = chords[k % chords.length];
+      for (var v = 0; v < 3; v++) voices[v].frequency.setTargetAtTime(chord[v], tt, 0.25);
+    }
+
+    var hatBuf = whiteBuffer(c, 0.1);
+    function kick(at) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.frequency.setValueAtTime(110, at);
+      o.frequency.exponentialRampToValueAtTime(42, at + 0.12);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.7, at + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
+      o.connect(g);
+      g.connect(bus);
+      o.start(at);
+      o.stop(at + 0.4);
+    }
+    function hat(at) {
+      var src = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
+      src.buffer = hatBuf;
+      hp.type = 'highpass';
+      hp.frequency.value = 7000;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.12, at + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.06);
+      src.connect(hp);
+      hp.connect(g);
+      g.connect(bus);
+      src.start(at);
+      src.stop(at + 0.08);
+    }
+
+    var next = 0;
+    run.audioTick = function () {
+      var limit = c.currentTime + 1.0;
+      while (true) {
+        var bt = t0 + next * beat;
+        if (bt > limit || bt >= t0 + total) break;
+        if (bt >= c.currentTime - 0.01) {
+          kick(bt);
+          hat(bt + beat / 2);
+        }
+        next++;
+      }
+    };
+    run.audioTick();
+    bag.timers.push(setInterval(function () { if (run.audioTick) run.audioTick(); }, 200));
+    bag.extra.push(bus);
+  }
+
+  // Soft ticks before each new part: 1 before part 2, 2 before part 3, 3 before part 4
+  function buildTicks(c, run, t0, bag) {
     var tickGain = c.createGain();
-    tickGain.gain.value = Math.min(0.5, s.volume * 1.2);
+    tickGain.gain.value = Math.min(0.5, run.s.volume * 1.2);
     tickGain.connect(c.destination);
-    for (var p = 1; p < SEGMENTS.length; p++) {
+    for (var p = 1; p < run.tl.segs.length; p++) {
       for (var j = 0; j < p; j++) {
-        var at = t0 + segStart[p] - 1.0 + j * 0.22;
+        var at = t0 + run.tl.start[p] - 1.0 + j * 0.22;
         var tick = c.createOscillator();
         tick.frequency.value = 1200;
         var env = c.createGain();
@@ -587,16 +894,33 @@ textarea {
         env.connect(tickGain);
         tick.start(at);
         tick.stop(at + 0.1);
-        oscs.push(tick);
+        bag.sources.push(tick);
       }
     }
-    return { master: master, oscs: oscs, extra: [tickGain] };
+    bag.extra.push(tickGain);
   }
 
-  function silence(audio) {
-    if (!audio) return;
+  function buildAudio(run, t0) {
+    var c = ctx, prog = run.prog, total = run.tl.total, vol = run.s.volume;
+    var master = c.createGain();
+    master.gain.setValueAtTime(0, t0);
+    master.gain.linearRampToValueAtTime(vol, t0 + prog.fadeIn);
+    master.gain.setValueAtTime(vol, t0 + total - prog.fadeOut);
+    master.gain.linearRampToValueAtTime(0, t0 + total);
+    master.connect(c.destination);
+    var bag = { master: master, sources: [], extra: [], timers: [] };
+    if (prog.sound === 'beats') buildBeats(c, master, run, t0, bag);
+    else if (prog.sound === 'noise') buildNoise(c, master, run, t0, bag);
+    else if (prog.sound === 'rhythm') buildRhythm(c, master, run, t0, bag);
+    if (prog.ticks) buildTicks(c, run, t0, bag);
+    return bag;
+  }
+
+  function silence(bag) {
+    if (!bag) return;
     var now = ctx.currentTime;
-    var g = audio.master.gain;
+    bag.timers.forEach(function (id) { clearInterval(id); });
+    var g = bag.master.gain;
     try {
       if (g.cancelAndHoldAtTime) {
         g.cancelAndHoldAtTime(now);
@@ -606,14 +930,14 @@ textarea {
         g.setValueAtTime(v, now);
       }
       g.setTargetAtTime(0, now, 0.004);
-    } catch (e) { /* fall through to stopping oscillators */ }
-    audio.oscs.forEach(function (o) { try { o.stop(now + 0.06); } catch (e) {} });
-    if (audio.extra) audio.extra.forEach(function (g) {
-      try { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(0, now); } catch (e) {}
+    } catch (e) {}
+    bag.extra.forEach(function (node) {
+      try { node.gain.cancelScheduledValues(now); node.gain.setValueAtTime(0, now); } catch (e) {}
     });
+    bag.sources.forEach(function (o) { try { o.stop(now + 0.06); } catch (e) {} });
     setTimeout(function () {
-      try { audio.master.disconnect(); } catch (e) {}
-      if (audio.extra) audio.extra.forEach(function (g) { try { g.disconnect(); } catch (e) {} });
+      try { bag.master.disconnect(); } catch (e) {}
+      bag.extra.forEach(function (node) { try { node.disconnect(); } catch (e) {} });
     }, 300);
   }
 
@@ -649,25 +973,32 @@ textarea {
   earL.addEventListener('click', function () { playEar('left'); });
   earR.addEventListener('click', function () { playEar('right'); });
 
-  /* ---------- Shared run logic ---------- */
+  /* ================= Running a session ================= */
   var run = null;
 
   function startRun(mode) {
     getCtx();
+    var s = readSettings();
+    var prog = PROGRAMS[s.program];
     run = {
       mode: mode,
-      s: readSettings(),
+      s: s,
+      prog: prog,
+      tl: buildTimeline(prog, prefRate()),
       t0: null,
       audio: null,
+      audioTick: null,
+      rhythm: null,
       lastFrameT: null,
       gaps: [],
       gapSeg: [],
       elapsed: 0,
       done: false,
       reason: null,
-      frameRate: null
+      frameRate: null,
+      answers: {}
     };
-    currentTint = COLORS[run.s.color].tint;
+    currentTint = COLORS[s.color].tint;
     resultsEl.hidden = true;
     updateButtons();
   }
@@ -676,26 +1007,28 @@ textarea {
   function frameTick(frameT) {
     if (run.t0 === null) {
       run.t0 = ctx.currentTime + 0.25;
-      run.audio = buildAudio(run.s, run.t0);
+      run.audio = buildAudio(run, run.t0);
     }
+    if (run.audioTick) run.audioTick();
     var t = audioNow() - run.t0;
-    if (run.lastFrameT !== null && t >= SETTLE && t < TOTAL) {
+    if (run.lastFrameT !== null && t >= SETTLE && t < run.tl.total) {
       run.gaps.push(frameT - run.lastFrameT);
-      run.gapSeg.push(segIndexAt(t));
+      run.gapSeg.push(segIndexAt(t, run.tl));
     }
     run.lastFrameT = frameT;
     if (t > run.elapsed) run.elapsed = t;
-    if (t >= TOTAL) {
+    if (t >= run.tl.total) {
       finish('complete');
       return 0;
     }
-    return t < 0 ? 0 : lightAt(t, run.s);
+    return t < 0 ? 0 : lightAt(t, run);
   }
 
   function finish(reason) {
     if (!run || run.done) return;
     run.done = true;
     run.reason = reason;
+    run.audioTick = null;
     silence(run.audio);
     if (run.mode === 'vr') endXR(); else endPreview();
     updateButtons();
@@ -710,17 +1043,18 @@ textarea {
     stopBtn.hidden = !(running && run.mode === 'preview');
     controls.forEach(function (el) { el.disabled = running; });
     ack.disabled = running;
+    applyProgramUI();
   }
   ack.addEventListener('change', updateButtons);
 
-  /* ---------- VR ---------- */
+  /* ================= VR ================= */
   var vrSupported = false;
   var xr = { session: null, gl: null, refSpace: null };
   var kill = { armed: false, armAfter: 0 };
 
   function checkVR() {
     if (!window.isSecureContext) {
-      setStatus('VR mode needs an https address. Put this file on GitHub Pages, then open that link in the Quest browser. Preview still works here.', 'warn');
+      setStatus('VR mode needs an https address. Open this page from GitHub Pages in the Quest browser. Preview still works here.', 'warn');
       return;
     }
     if (!navigator.xr || !navigator.xr.isSessionSupported) {
@@ -729,7 +1063,7 @@ textarea {
     }
     navigator.xr.isSessionSupported('immersive-vr').then(function (ok) {
       vrSupported = ok;
-      if (ok) setStatus('VR mode is available. Put on your earbuds, tap Enter VR, then hold the controllers still.', 'ok');
+      if (ok) setStatus('VR mode is available. Put on your earbuds, tap Enter VR, then rest the controllers in your lap.', 'ok');
       else setStatus('No VR headset found. Preview still works here.', 'warn');
       updateButtons();
     }, function () {
@@ -795,7 +1129,7 @@ textarea {
     var session = frame.session;
     session.requestAnimationFrame(onXRFrame);
 
-    // Kill switch: arms once every button has been released after entering VR
+    // Kill switch arms once every button has been released after entering VR
     var pressed = anyButtonPressed(session);
     if (!kill.armed) {
       if (!pressed && performance.now() > kill.armAfter) kill.armed = true;
@@ -824,13 +1158,12 @@ textarea {
 
   vrBtn.addEventListener('click', enterVR);
 
-  /* ---------- On-screen preview ---------- */
+  /* ================= On-screen preview ================= */
   var previewRaf = 0;
   var progressTimer = 0;
 
   function startPreview() {
     startRun('preview');
-    lens.classList.add('is-live');
     lens.style.backgroundImage = 'none';
     progressEl.hidden = false;
     previewRaf = requestAnimationFrame(onPreviewFrame);
@@ -849,15 +1182,16 @@ textarea {
   function showProgress() {
     if (!run || run.done) return;
     var t = Math.max(0, run.elapsed);
-    var hz = SEGMENTS[segIndexAt(t)].hz;
-    progressEl.textContent = 'Part ' + (segIndexAt(t) + 1) + ', ' + fmtHz(hz) + ' pulses per second, ' + fmtTime(t) + ' of ' + fmtTime(TOTAL);
+    var i = segIndexAt(t, run.tl);
+    var parts = run.tl.segs.length > 1 ? 'Part ' + (i + 1) + ', ' : '';
+    var rate = run.prog.light === 'flicker' ? fmtHz(run.tl.segs[i].hz) + ' pulses per second, ' : '';
+    progressEl.textContent = run.prog.name + ': ' + parts + rate + fmtTime(t) + ' of ' + fmtTime(run.tl.total);
   }
 
   function endPreview() {
     cancelAnimationFrame(previewRaf);
     clearInterval(progressTimer);
     lens.style.backgroundColor = '';
-    lens.classList.remove('is-live');
     updateLensColor();
     progressEl.hidden = true;
   }
@@ -874,7 +1208,7 @@ textarea {
     if (document.hidden && run && !run.done && run.mode === 'preview') finish('hidden');
   });
 
-  /* ---------- Results ---------- */
+  /* ================= Results ================= */
   var REASONS = {
     complete: 'Finished',
     button: 'You pressed a controller button.',
@@ -901,9 +1235,9 @@ textarea {
     }
     var sorted = gaps.slice().sort(function (a, b) { return a - b; });
     var median = sorted[Math.floor(n / 2)];
-    var expected = r.mode === 'vr' ? QUEST1_FRAME_MS : median;
+    var expected = r.mode === 'vr' ? 1000 / FRAME_HZ : median;
     var missed = 0;
-    var perSeg = SEGMENTS.map(function () { return { missed: 0, worst: 0, frames: 0 }; });
+    var perSeg = r.tl.segs.map(function () { return { missed: 0, worst: 0, frames: 0 }; });
     for (i = 0; i < n; i++) {
       var m = Math.max(0, Math.round(gaps[i] / expected) - 1);
       var seg = perSeg[r.gapSeg[i]];
@@ -921,6 +1255,88 @@ textarea {
     return res;
   }
 
+  function partLabel(r, i) {
+    var label = 'Part ' + (i + 1);
+    if (r.prog.light === 'flicker' || r.prog.sound === 'beats') label += ' (' + fmtHz(r.tl.segs[i].hz) + ' Hz)';
+    return label;
+  }
+
+  function answerCode(key, value) {
+    if (!value) return '?';
+    if (value.indexOf('Part ') === 0) return value.split(' ')[1];
+    return value.charAt(0);
+  }
+
+  function renderQuestions(r) {
+    var box = $('questions');
+    box.innerHTML = '';
+    r.prog.questions.forEach(function (key) {
+      var q = QUESTIONS[key];
+      var fs = document.createElement('fieldset');
+      fs.className = 'q';
+      var lg = document.createElement('legend');
+      lg.textContent = q.label;
+      fs.appendChild(lg);
+      var pills = document.createElement('div');
+      pills.className = 'pills';
+      var opts = [];
+      if (q.parts) {
+        r.tl.segs.forEach(function (seg, i) { opts.push({ value: 'Part ' + (i + 1), text: partLabel(r, i) }); });
+        opts.push({ value: q.extra, text: q.extra });
+      } else {
+        q.opts.forEach(function (o) { opts.push({ value: o, text: o }); });
+      }
+      opts.forEach(function (o) {
+        var label = document.createElement('label');
+        label.className = 'pill';
+        var input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'q_' + key;
+        input.value = o.value;
+        input.addEventListener('change', function () { onAnswer(key, o.value); });
+        var span = document.createElement('span');
+        span.textContent = o.text;
+        label.appendChild(input);
+        label.appendChild(span);
+        pills.appendChild(label);
+      });
+      fs.appendChild(pills);
+      box.appendChild(fs);
+    });
+  }
+
+  function showNote(text, kind) {
+    var note = $('answerNote');
+    note.textContent = text;
+    note.className = 'note' + (kind ? ' ' + kind : '');
+    note.hidden = !text;
+  }
+
+  function onAnswer(key, value) {
+    var r = run;
+    if (!r) return;
+    r.answers[key] = value;
+    if (key === 'strongest') {
+      if (value.indexOf('Part ') === 0 && r.reason === 'complete') {
+        var hz = r.tl.segs[Number(value.split(' ')[1]) - 1].hz;
+        store.prefRate = hz;
+        saveStore();
+        refreshProgramText();
+        showNote('Saved. Visuals will now run at ' + fmtHz(hz) + ' pulses per second.', 'ok');
+      } else if (value.indexOf('Part ') === 0) {
+        showNote('Not saved, because the session stopped early. Run it to the end to set your rate.', 'warn');
+      } else {
+        showNote('No change. Visuals stays at ' + fmtHz(prefRate()) + ' pulses per second.', '');
+      }
+    }
+    if (key === 'comfort') {
+      if (value === 'Yes') showNote('Next time, lower the brightness or switch to Smooth light. If discomfort keeps happening, stop using flicker sessions.', 'warn');
+      else if (value === 'A little') showNote('Try a lower brightness next time.', 'warn');
+      else if (!r.answers.strongest) showNote('', '');
+    }
+    buildReport();
+  }
+
   var lastSummary = null;
 
   function showResults() {
@@ -928,20 +1344,22 @@ textarea {
     var sum = summarize(r);
     lastSummary = sum;
     var complete = r.reason === 'complete';
-    var verdict, note;
+    var smoothWord = !sum.n || sum.n < FRAME_HZ ? null
+      : sum.missedPct < 0.5 ? 'Smooth playback' : sum.missedPct < 3 ? 'Mostly smooth' : 'Choppy playback';
 
-    if (sum.n < 72) {
-      verdict = complete ? 'Not enough data' : 'Stopped at ' + fmtTime(r.elapsed);
-      note = (complete ? '' : REASONS[r.reason] + ' ') + 'Too few frames were recorded to judge smoothness.';
+    var verdict, note;
+    if (r.prog === PROGRAMS.test) {
+      verdict = complete ? (smoothWord || 'Not enough data') : 'Stopped at ' + fmtTime(r.elapsed);
     } else {
-      var smooth = sum.missedPct < 0.5 ? 'Smooth playback' : sum.missedPct < 3 ? 'Mostly smooth' : 'Choppy playback';
-      verdict = complete ? smooth : 'Stopped at ' + fmtTime(r.elapsed) + ', ' + smooth.toLowerCase();
-      if (sum.missedPct < 0.5) note = 'The display kept up the whole time.';
-      else if (sum.missedPct < 3) note = 'A few frames were late. Short hiccups are normal, but mention any stutter you noticed.';
-      else note = 'Too many frames were late for reliable pulsing. The report will show where it struggled.';
-      if (!complete) note = REASONS[r.reason] + ' ' + note;
-      if (r.mode === 'preview') note += ' This was the on-screen preview, so it reflects this screen, not the headset.';
+      verdict = complete ? r.prog.name + ' finished' : r.prog.name + ' stopped at ' + fmtTime(r.elapsed);
     }
+    note = complete ? '' : REASONS[r.reason] + ' ';
+    if (smoothWord) {
+      note += 'Playback ran at ' + sum.fps.toFixed(1) + ' frames per second with ' + sum.missed + ' missed.';
+    } else {
+      note += 'Too few frames were recorded to judge playback.';
+    }
+    if (r.mode === 'preview') note += ' This was the on-screen preview, not the headset.';
     $('verdict').textContent = verdict;
     $('verdictNote').textContent = note;
 
@@ -953,32 +1371,31 @@ textarea {
       stats.appendChild(dt); stats.appendChild(dd);
     }
     stat('Ran in', r.mode === 'vr' ? 'VR headset' : 'On-screen preview');
-    stat('Length', fmtTime(Math.min(r.elapsed, TOTAL)) + ' of ' + fmtTime(TOTAL));
+    stat('Length', fmtTime(Math.min(r.elapsed, r.tl.total)) + ' of ' + fmtTime(r.tl.total));
     if (sum.n) {
       stat('Frame rate', sum.fps.toFixed(1) + ' per second');
       stat('Missed frames', sum.missed + ' (' + sum.missedPct.toFixed(2) + '%)');
       stat('Worst gap', ms(sum.worst));
     }
+    if (r.rhythm) stat('Rhythm track', Math.round(r.rhythm.bpm) + ' BPM, kick every ' + r.rhythm.perBeat + ' flashes');
 
     var rows = $('segRows');
     rows.innerHTML = '';
-    SEGMENTS.forEach(function (seg, i) {
+    r.tl.segs.forEach(function (seg, i) {
       var tr = document.createElement('tr');
       var p = sum.perSeg ? sum.perSeg[i] : null;
-      var cells = [
-        'Part ' + (i + 1) + ', ' + fmtHz(seg.hz) + ' per second',
-        p && p.frames ? String(p.missed) : 'Not reached',
-        p && p.frames ? ms(p.worst) : ''
-      ];
-      cells.forEach(function (text) {
+      [partLabel(r, i), p && p.frames ? String(p.missed) : 'Not reached', p && p.frames ? ms(p.worst) : ''].forEach(function (text) {
         var td = document.createElement('td');
         td.textContent = text;
         tr.appendChild(td);
       });
       rows.appendChild(tr);
     });
+    $('segWrap').hidden = r.tl.segs.length < 2;
+    $('details').open = r.prog === PROGRAMS.test;
 
-    Array.prototype.forEach.call(document.querySelectorAll('input[name="seen"], input[name="worst"], input[name="heard"]'), function (el) { el.checked = false; });
+    renderQuestions(r);
+    showNote('', '');
     buildReport();
     $('copyNote').textContent = '';
     resultsEl.hidden = false;
@@ -988,60 +1405,61 @@ textarea {
     }, 50);
   }
 
-  function answer(name) {
-    var el = document.querySelector('input[name="' + name + '"]:checked');
-    return el ? el.value : 'Not answered';
-  }
-
   function buildReport() {
     if (!run) return;
-    var r = run, sum = lastSummary || summarize(r);
+    var r = run, sum = lastSummary || summarize(r), prog = r.prog;
     var lines = [];
-    lines.push('Pulse test v' + VERSION);
+    lines.push('Pulse v' + VERSION);
+    lines.push('Session: ' + prog.name + ' (' + fmtTime(r.tl.total) + ')');
     lines.push('Mode: ' + (r.mode === 'vr' ? 'VR headset' : 'on-screen preview'));
     lines.push('Result: ' + (r.reason === 'complete' ? 'complete' : 'stopped at ' + fmtTime(r.elapsed) + ' (' + r.reason + ')'));
-    lines.push('Sound: ' + r.s.sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
-    lines.push('Light: ' + r.s.wave + ', ' + COLORS[r.s.color].name + ', brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%');
+    var sound = prog.sound === 'beats' ? r.s.sound + ' beat tones'
+      : prog.sound === 'noise' ? 'brown noise'
+      : 'rhythm track' + (r.rhythm ? ' at ' + Math.round(r.rhythm.bpm) + ' BPM' : '');
+    lines.push('Sound: ' + sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
+    var light = prog.light === 'flicker'
+      ? r.s.wave + ', ' + COLORS[r.s.color].name + ', brightness ' + Math.round(r.s.brightness * 100) + '%, pulse strength ' + Math.round(r.s.depth * 100) + '%'
+      : 'steady, ' + COLORS[r.s.color].name + ', brightness ' + Math.round(r.s.brightness * 100) + '%';
+    lines.push('Light: ' + light);
+    lines.push('Rates: ' + r.tl.segs.map(function (seg) { return fmtHz(seg.hz) + ' Hz for ' + fmtTime(seg.dur); }).join(', '));
     if (sum.n) {
       lines.push('Frames: ' + sum.n + ' at ' + sum.fps.toFixed(1) + ' fps (median gap ' + ms(sum.median) + ')');
       lines.push('Missed frames: ' + sum.missed + ' (' + sum.missedPct.toFixed(2) + '%), worst gap ' + ms(sum.worst));
-      SEGMENTS.forEach(function (seg, i) {
-        var p = sum.perSeg[i];
-        lines.push('  Part ' + (i + 1) + ' (' + fmtHz(seg.hz) + ' Hz): ' + (p.frames ? p.missed + ' missed, worst ' + ms(p.worst) : 'not reached'));
-      });
+      if (r.tl.segs.length > 1) {
+        r.tl.segs.forEach(function (seg, i) {
+          var p = sum.perSeg[i];
+          lines.push('  ' + partLabel(r, i) + ': ' + (p.frames ? p.missed + ' missed, worst ' + ms(p.worst) : 'not reached'));
+        });
+      }
     } else {
       lines.push('Frames: none recorded');
     }
     if (r.mode === 'vr') lines.push('Session frame rate: ' + (r.frameRate ? r.frameRate : 'not reported'));
     if (ctx) {
       lines.push('Audio: ' + ctx.sampleRate + ' Hz, base latency ' + (ctx.baseLatency ? Math.round(ctx.baseLatency * 1000) + ' ms' : 'n/a') +
-        ', output latency ' + (ctx.outputLatency ? Math.round(ctx.outputLatency * 1000) + ' ms' : 'n/a') +
-        ', output timestamps ' + (ctx.getOutputTimestamp ? 'yes' : 'no'));
+        ', output latency ' + (ctx.outputLatency ? Math.round(ctx.outputLatency * 1000) + ' ms' : 'n/a'));
     }
-    var worst = answer('worst');
-    lines.push('Light visible: ' + answer('seen'));
-    lines.push('Least even part: ' + (worst === '0' ? 'none' : worst));
-    lines.push('Heard pulsing: ' + answer('heard'));
+    prog.questions.forEach(function (key) {
+      lines.push(QUESTIONS[key].label + ' ' + (r.answers[key] || 'Not answered'));
+    });
     lines.push('Browser: ' + navigator.userAgent);
     $('report').value = lines.join('\n');
 
-    // Short code, e.g. "VR ST GR 72.0 0-0-3-0 P3 CC"
-    var letter = function (v) { return v === 'Not answered' ? '?' : v.charAt(0); };
-    var missedList = sum.perSeg ? sum.perSeg.map(function (p) { return p.frames ? p.missed : 'x'; }).join('-') : 'x-x-x-x';
+    // Quick code, e.g. "VR FR ST GR 71.9 0-0-1-0 3YN"
+    var missed = !sum.perSeg ? 'x'
+      : r.tl.segs.length > 1 ? sum.perSeg.map(function (p) { return p.frames ? p.missed : 'x'; }).join('-')
+      : String(sum.missed);
+    var lightCode = prog.light === 'steady' ? 'SD' : r.s.wave === 'strobe' ? 'ST' : 'SM';
     $('quick').textContent = [
       r.mode === 'vr' ? 'VR' : 'PV',
-      r.s.wave === 'strobe' ? 'ST' : 'SM',
+      prog.code,
+      lightCode,
       COLORS[r.s.color].code,
       sum.n ? sum.fps.toFixed(1) : '0',
-      missedList,
-      worst === 'Not answered' ? 'P?' : 'P' + worst,
-      letter(answer('seen')) + letter(answer('heard'))
+      missed,
+      prog.questions.map(function (key) { return answerCode(key, r.answers[key]); }).join('')
     ].join(' ');
   }
-
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="seen"], input[name="worst"], input[name="heard"]'), function (el) {
-    el.addEventListener('change', buildReport);
-  });
 
   $('copyBtn').addEventListener('click', function () {
     var text = $('report').value;
@@ -1065,9 +1483,12 @@ textarea {
     resultsEl.hidden = true;
     run = null;
     updateButtons();
-    vrBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('programList').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
+  /* ================= Start up ================= */
+  restoreSettings();
+  refreshProgramText();
   updateLensColor();
   checkVR();
   updateButtons();
