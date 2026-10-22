@@ -237,7 +237,7 @@ textarea {
   <header class="hero">
     <div class="hero-text">
       <h1>Pulse</h1>
-      <p class="lede"><strong>Version 0.5.</strong> Light and sound sessions for your Quest, built on the timing you tested.</p>
+      <p class="lede"><strong>Version 0.5.1.</strong> Light and sound sessions for your Quest, built on the timing you tested.</p>
     </div>
     <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
   </header>
@@ -382,7 +382,7 @@ textarea {
   'use strict';
 
   /* ================= Constants and safety limits ================= */
-  var VERSION = '0.5';
+  var VERSION = '0.5.1';
   var FRAME_HZ = 72;            // Quest 1 refresh rate
   var CARRIER_HZ = 400;         // binaural beats are heard best around 400 to 500 Hz
   var MAX_LIGHT_HZ = 12;        // stays below the 15 to 25 Hz seizure-risk band
@@ -743,7 +743,9 @@ textarea {
   function getCtx() {
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
-      ctx = new AC();
+      // 'playback' asks for larger audio buffers, which ride out brief system stalls.
+      // Light stays in sync because timing comes from getOutputTimestamp.
+      try { ctx = new AC({ latencyHint: 'playback' }); } catch (e) { ctx = new AC(); }
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -802,39 +804,45 @@ textarea {
     bag.sources.forEach(function (o) { o.start(t0); o.stop(end); });
   }
 
-  // Brown noise, generated once, with a crossfaded loop point so it never clicks
-  var brownBuffer = null;
-  function getBrownBuffer(c) {
-    if (brownBuffer && brownBuffer.sampleRate === c.sampleRate) return brownBuffer;
-    var len = Math.floor(c.sampleRate * 12);
-    var fade = Math.floor(c.sampleRate * 0.5);
+  // Brown noise that loops with no seam: the filter runs over the noise twice, so the
+  // last sample leads straight into the first. Two layers of different lengths are
+  // mixed so the combined sound doesn't audibly repeat for minutes.
+  var BROWN_LAYER_SECONDS = [11.0, 14.3];
+  var brownLayers = null;
+  function makeSeamlessBrown(c, seconds) {
+    var len = Math.floor(c.sampleRate * seconds);
     var buf = c.createBuffer(2, len, c.sampleRate);
     for (var ch = 0; ch < 2; ch++) {
-      var gen = new Float32Array(len + fade), last = 0, i;
-      for (i = 0; i < len + fade; i++) {
-        last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-        gen[i] = Math.max(-1, Math.min(1, last * 3.5));
-      }
+      var white = new Float32Array(len), i, last = 0;
+      for (i = 0; i < len; i++) white[i] = Math.random() * 2 - 1;
+      for (i = 0; i < len; i++) last = (last + 0.02 * white[i]) / 1.02;
       var d = buf.getChannelData(ch);
       for (i = 0; i < len; i++) {
-        d[i] = i < fade ? gen[i] * (i / fade) + gen[len + i] * (1 - i / fade) : gen[i];
+        last = (last + 0.02 * white[i]) / 1.02;
+        d[i] = Math.max(-1, Math.min(1, last * 3.5));
       }
     }
-    brownBuffer = buf;
     return buf;
+  }
+  function getBrownLayers(c) {
+    if (brownLayers && brownLayers[0].sampleRate === c.sampleRate) return brownLayers;
+    brownLayers = BROWN_LAYER_SECONDS.map(function (sec) { return makeSeamlessBrown(c, sec); });
+    return brownLayers;
   }
 
   function buildNoise(c, out, run, t0, bag) {
-    var src = c.createBufferSource();
-    src.buffer = getBrownBuffer(c);
-    src.loop = true;
     var g = c.createGain();
-    g.gain.value = 0.8;
-    src.connect(g);
+    g.gain.value = 0.8 * Math.SQRT1_2;
     g.connect(out);
-    src.start(t0);
-    src.stop(t0 + run.tl.total + 0.2);
-    bag.sources.push(src);
+    getBrownLayers(c).forEach(function (buf) {
+      var src = c.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.connect(g);
+      src.start(t0);
+      src.stop(t0 + run.tl.total + 0.2);
+      bag.sources.push(src);
+    });
   }
 
   function whiteBuffer(c, seconds) {
@@ -1066,6 +1074,7 @@ textarea {
       logOpen: null
     };
     currentTint = COLORS[s.color].tint;
+    if (run.soundKind === 'noise') getBrownLayers(ctx);
     resultsEl.hidden = true;
     updateButtons();
   }
