@@ -42,6 +42,7 @@
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -211,6 +212,13 @@ textarea {
   border-radius: 0.6rem;
   resize: vertical;
 }
+.expect { margin: 0 0 1.1rem; padding: 0.9rem 1rem; border-radius: 0.75rem; background: var(--surface); border: 1px solid var(--line); }
+.expect-title { margin: 0 0 0.4rem; font-weight: 700; }
+.expect ul { margin: 0; padding-left: 1.2rem; }
+.expect li { margin-bottom: 0.3rem; font-size: 1rem; }
+.timeline { position: relative; height: 1.6rem; margin: 0.25rem 0 0.4rem; border-radius: 0.4rem; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
+.timeline span { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 0.2rem; }
+.timeline-scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; margin-bottom: 0.5rem; }
 .footnote { margin: 2.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
 
 @media (max-width: 30rem) {
@@ -229,7 +237,7 @@ textarea {
   <header class="hero">
     <div class="hero-text">
       <h1>Pulse</h1>
-      <p class="lede"><strong>Version 0.4.</strong> Light and sound sessions for your Quest, built on the timing you tested.</p>
+      <p class="lede"><strong>Version 0.5.</strong> Light and sound sessions for your Quest, built on the timing you tested.</p>
     </div>
     <div class="lens" id="lens" role="img" aria-label="Light preview"></div>
   </header>
@@ -275,6 +283,12 @@ textarea {
       </fieldset>
       <p class="hint applies" id="soundNote" hidden></p>
 
+      <fieldset class="choices" id="visualsSoundSet" hidden>
+        <legend>Visuals sound</legend>
+        <label class="choice"><input type="radio" name="vsound" value="rhythm" checked><span><strong>Rhythm track</strong><span class="hint">A soft beat whose kick lands on every few flashes.</span></span></label>
+        <label class="choice"><input type="radio" name="vsound" value="noise"><span><strong>Brown noise</strong><span class="hint">Steady noise, the same setup as the 2024 flicker study.</span></span></label>
+      </fieldset>
+
       <fieldset class="choices" id="waveSet">
         <legend>Light</legend>
         <label class="choice"><input type="radio" name="wave" value="strobe" checked><span><strong>Strobe</strong><span class="hint">Sharp flashes, on about a third of the time, like the lamps used in studies.</span></span></label>
@@ -312,6 +326,10 @@ textarea {
     <li class="step">
       <h2>Start</h2>
       <p id="startSummary"></p>
+      <div class="expect" id="expect" hidden>
+        <p class="expect-title">Before you start</p>
+        <ul id="expectList"></ul>
+      </div>
       <div class="row">
         <button class="btn" id="vrBtn" type="button" disabled>Enter VR</button>
         <button class="btn secondary" id="previewBtn" type="button" disabled>Preview on this screen</button>
@@ -325,6 +343,13 @@ textarea {
   <section class="results" id="results" hidden aria-labelledby="verdict">
     <h2 class="verdict" id="verdict" tabindex="-1"></h2>
     <p id="verdictNote" style="margin:0 0 1.25rem"></p>
+    <div id="logBox" hidden>
+      <p class="report-label">What you logged</p>
+      <dl class="stats" id="logStats"></dl>
+      <div class="timeline" id="timeline" role="img"></div>
+      <div class="timeline-scale"><span>0:00</span><span id="timelineEnd"></span></div>
+      <p class="hint" id="logContext" style="margin:0 0 1.25rem"></p>
+    </div>
     <div id="questions"></div>
     <p class="note" id="answerNote" hidden></p>
     <details id="details">
@@ -357,7 +382,7 @@ textarea {
   'use strict';
 
   /* ================= Constants and safety limits ================= */
-  var VERSION = '0.4';
+  var VERSION = '0.5';
   var FRAME_HZ = 72;            // Quest 1 refresh rate
   var CARRIER_HZ = 400;         // binaural beats are heard best around 400 to 500 Hz
   var MAX_LIGHT_HZ = 12;        // stays below the 15 to 25 Hz seizure-risk band
@@ -384,6 +409,8 @@ textarea {
   }
 
   /* ================= Session programs ================= */
+  var STICK_LINE = 'Nudge the thumbstick forward when something appears and back when it fades. Don’t click it in, because any button press stops the session.';
+  var KEYS_LINE = 'In the on-screen preview, use the up and down arrow keys instead.';
   var PROGRAMS = {
     unwind: {
       name: 'Unwind', code: 'UW', light: 'flicker', sound: 'beats', fadeIn: 30, fadeOut: 30,
@@ -394,19 +421,40 @@ textarea {
           { dur: 150, hz: exact(10) }, { dur: 120, hz: exact(11) }, { dur: 150, hz: exact(12) }
         ];
       },
-      questions: ['relaxed', 'patterns', 'comfort']
+      questions: ['relaxed', 'patterns', 'comfort'],
+      logs: true,
+      expect: [STICK_LINE + ' Logging is optional.', KEYS_LINE]
     },
     visuals: {
-      name: 'Visuals', code: 'VI', light: 'flicker', sound: 'rhythm', fadeIn: 30, fadeOut: 20,
-      desc: function (pref) { return 'A steady flicker at ' + fmtHz(pref) + ' pulses per second with a rhythm track locked to it. Keep your eyes open.'; },
+      name: 'Visuals', code: 'VI', light: 'flicker', sound: 'visuals', fadeIn: 30, fadeOut: 20,
+      desc: function (pref) { return 'A steady flicker at ' + fmtHz(pref) + ' pulses per second, with a rhythm track or brown noise. Keep your eyes open.'; },
       segments: function (pref) { return [{ dur: 900, hz: pref }]; },
-      questions: ['patterns', 'relaxed', 'comfort']
+      questions: ['kind', 'relaxed', 'comfort'],
+      logs: true,
+      expect: [
+        'You might see colors, motion, tunnels, spirals or grids, or nothing at all. Both are normal.',
+        'Don’t try to imagine anything. Just watch, and let whatever appears change on its own.',
+        'Simple patterns usually show up within the first couple of minutes.',
+        STICK_LINE,
+        KEYS_LINE
+      ],
+      studyNote: 'For comparison, in a 2024 study of 15 minutes of screen flicker, simple patterns peaked about 1.5 minutes in.'
     },
     ganzfeld: {
       name: 'Ganzfeld', code: 'GZ', light: 'steady', steadyLevel: 1, sound: 'noise', fadeIn: 60, fadeOut: 20, suggestColor: 'green',
-      desc: function () { return 'No flicker. An even glow fills your view while brown noise plays. Keep your eyes open and let your gaze rest.'; },
-      segments: function () { return [{ dur: 1200, hz: 0 }]; },
-      questions: ['relaxed', 'imagery', 'comfort']
+      desc: function () { return 'No flicker. An even glow fills your view while brown noise plays. Slow to start, so give it time.'; },
+      segments: function () { return [{ dur: 1500, hz: 0 }]; },
+      questions: ['kind', 'relaxed', 'comfort'],
+      logs: true,
+      expect: [
+        'Expect a slow start. In a 2024 study, simple shapes peaked about 4 to 5 minutes in and more detailed images about 14 minutes in.',
+        'Sit upright. Feeling sleepy makes images fade sooner.',
+        'Images here tend to be softer, like clouds, shadows or swirls, and now and then objects or scenes.',
+        'Keep your eyes open. Don’t try to imagine anything; let whatever appears drift.',
+        STICK_LINE,
+        KEYS_LINE
+      ],
+      studyNote: 'For comparison, in a 2024 study of a 25-minute Ganzfeld, simple images peaked about 4.5 minutes in and detailed ones about 14 minutes in.'
     },
     prework: {
       name: 'Before work', code: 'BW', light: 'steady', steadyLevel: 0.35, sound: 'beats', fadeIn: 20, fadeOut: 20,
@@ -418,7 +466,9 @@ textarea {
       name: 'Find your rate', code: 'FR', light: 'flicker', sound: 'beats', fadeIn: 6, fadeOut: 5, ticks: true,
       desc: function () { return 'Four 1-minute parts at 8, 9, 10.3 and 12 pulses per second. Afterwards you pick the one that felt strongest, and Visuals uses it.'; },
       segments: function () { return [{ dur: 60, hz: exact(9) }, { dur: 60, hz: exact(8) }, { dur: 60, hz: exact(7) }, { dur: 60, hz: exact(6) }]; },
-      questions: ['strongest', 'patterns', 'comfort']
+      questions: ['strongest', 'patterns', 'comfort'],
+      logs: true,
+      expect: [STICK_LINE + ' Logging is optional; the question afterwards matters more.', KEYS_LINE]
     },
     test: {
       name: 'Headset test', code: 'HT', light: 'flicker', sound: 'beats', fadeIn: 10, fadeOut: 5, ticks: true,
@@ -438,6 +488,7 @@ textarea {
     focused:   { label: 'How focused do you feel?', opts: ['More focused', 'About the same', 'Less focused'] },
     patterns:  { label: 'Did you see patterns or motion?', opts: ['Yes', 'A little', 'No'] },
     imagery:   { label: 'Did you see or hear anything that wasn’t really there?', opts: ['Yes', 'A little', 'No'] },
+    kind:      { label: 'What did you mostly see?', opts: ['Shapes, colors or motion', 'Objects, faces or scenes', 'Both', 'Nothing'] },
     comfort:   { label: 'Was anything uncomfortable?', opts: ['No', 'A little', 'Yes'] }
   };
 
@@ -586,12 +637,13 @@ textarea {
   }
 
   var controls = [$('brightness'), $('depth'), $('volume'), earL, earR]
-    .concat(radios('sound'), radios('wave'), radios('color'), radios('program'));
+    .concat(radios('sound'), radios('vsound'), radios('wave'), radios('color'), radios('program'));
 
   function readSettings() {
     return {
       program: checkedValue('program'),
       sound: checkedValue('sound'),
+      vsound: checkedValue('vsound'),
       wave: checkedValue('wave'),
       color: checkedValue('color'),
       brightness: Number($('brightness').value) / 100,
@@ -603,7 +655,7 @@ textarea {
   function saveSettings() {
     var s = readSettings();
     store.settings = {
-      program: s.program, sound: s.sound, wave: s.wave, color: s.color,
+      program: s.program, sound: s.sound, vsound: s.vsound, wave: s.wave, color: s.color,
       brightness: $('brightness').value, depth: $('depth').value, volume: $('volume').value
     };
     saveStore();
@@ -613,7 +665,7 @@ textarea {
     var saved = store.settings || {};
     if (saved.program && PROGRAMS[saved.program]) setRadio('program', saved.program);
     else setRadio('program', store.prefRate ? 'unwind' : 'sweep');
-    ['sound', 'wave', 'color'].forEach(function (name) {
+    ['sound', 'vsound', 'wave', 'color'].forEach(function (name) {
       if (saved[name] && radios(name).some(function (el) { return el.value === saved[name]; })) setRadio(name, saved[name]);
     });
     ['brightness', 'depth', 'volume'].forEach(function (id) {
@@ -628,7 +680,7 @@ textarea {
     input.addEventListener('input', function () { out.textContent = input.value + '%'; });
     input.addEventListener('change', saveSettings);
   });
-  radios('sound').concat(radios('wave')).forEach(function (el) { el.addEventListener('change', saveSettings); });
+  radios('sound').concat(radios('wave'), radios('vsound')).forEach(function (el) { el.addEventListener('change', saveSettings); });
   radios('color').forEach(function (el) {
     el.addEventListener('change', function () { updateLensColor(); saveSettings(); });
   });
@@ -654,9 +706,11 @@ textarea {
     var flicker = prog.light === 'flicker';
     $('soundSet').disabled = !beats || running;
     $('soundNote').hidden = beats;
-    $('soundNote').textContent = prog.sound === 'rhythm'
-      ? 'This session plays its own rhythm track, timed to the light.'
+    $('soundNote').textContent = prog.sound === 'visuals'
+      ? 'Visuals plays a rhythm track or brown noise instead of beat tones. Pick one below.'
       : 'This session plays brown noise instead of beat tones.';
+    $('visualsSoundSet').hidden = prog.sound !== 'visuals';
+    $('visualsSoundSet').disabled = running;
     $('waveSet').disabled = !flicker || running;
     $('waveNote').hidden = flicker;
     $('waveNote').textContent = 'This session uses a steady glow with no flicker, so light style and pulse strength don’t apply.';
@@ -668,6 +722,15 @@ textarea {
     var text = prog.name + ' runs for ' + mins + (mins === 1 ? ' minute' : ' minutes') + ' and stops on its own.';
     if (prog.ticks) text += ' A soft tick marks each new part: one before part 2, two before part 3, three before part 4.';
     $('startSummary').textContent = text;
+
+    var list = $('expectList');
+    list.innerHTML = '';
+    (prog.expect || []).forEach(function (line) {
+      var li = document.createElement('li');
+      li.textContent = line;
+      list.appendChild(li);
+    });
+    $('expect').hidden = !(prog.expect && prog.expect.length);
   }
 
   function setStatus(text, kind) {
@@ -909,9 +972,10 @@ textarea {
     master.gain.linearRampToValueAtTime(0, t0 + total);
     master.connect(c.destination);
     var bag = { master: master, sources: [], extra: [], timers: [] };
-    if (prog.sound === 'beats') buildBeats(c, master, run, t0, bag);
-    else if (prog.sound === 'noise') buildNoise(c, master, run, t0, bag);
-    else if (prog.sound === 'rhythm') buildRhythm(c, master, run, t0, bag);
+    var kind = run.soundKind;
+    if (kind === 'beats') buildBeats(c, master, run, t0, bag);
+    else if (kind === 'noise') buildNoise(c, master, run, t0, bag);
+    else if (kind === 'rhythm') buildRhythm(c, master, run, t0, bag);
     if (prog.ticks) buildTicks(c, run, t0, bag);
     return bag;
   }
@@ -996,7 +1060,10 @@ textarea {
       done: false,
       reason: null,
       frameRate: null,
-      answers: {}
+      answers: {},
+      soundKind: prog.sound === 'visuals' ? s.vsound : prog.sound,
+      log: [],
+      logOpen: null
     };
     currentTint = COLORS[s.color].tint;
     resultsEl.hidden = true;
@@ -1024,8 +1091,36 @@ textarea {
     return t < 0 ? 0 : lightAt(t, run);
   }
 
+  /* ---------- Pattern log (thumbstick or arrow keys) ---------- */
+  function sessionTime() {
+    if (!run || run.t0 === null) return 0;
+    return Math.max(0, Math.min(audioNow() - run.t0, run.tl.total));
+  }
+  // Returns true if the event was recorded
+  function logEvent(kind) {
+    if (!run || run.done || !run.prog.logs || run.t0 === null) return false;
+    var t = sessionTime();
+    if (t < 0.5) return false;
+    if (kind === 'on') {
+      if (run.logOpen !== null) return false;
+      run.logOpen = t;
+      return true;
+    }
+    if (run.logOpen === null) return false;
+    run.log.push({ start: run.logOpen, end: t });
+    run.logOpen = null;
+    return true;
+  }
+  function closeLog() {
+    if (run && run.logOpen !== null) {
+      run.log.push({ start: run.logOpen, end: Math.min(run.elapsed, run.tl.total) });
+      run.logOpen = null;
+    }
+  }
+
   function finish(reason) {
     if (!run || run.done) return;
+    closeLog();
     run.done = true;
     run.reason = reason;
     run.audioTick = null;
@@ -1071,6 +1166,44 @@ textarea {
     });
   }
 
+  var stick = { armed: true };
+  function stickY(gp) {
+    if (!gp.axes) return 0;
+    if (gp.axes.length >= 4) return gp.axes[3];   // xr-standard: thumbstick y
+    if (gp.axes.length >= 2) return gp.axes[1];
+    return 0;
+  }
+  function buzz(gp, strength, msLen) {
+    var h = gp.hapticActuators && gp.hapticActuators[0];
+    if (!h || !h.pulse) return;
+    try {
+      var p = h.pulse(strength, msLen);
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+  // Forward (up) marks something appearing, back (down) marks it fading.
+  // The stick has to return to centre before the next mark counts.
+  function pollStick(session) {
+    var sources = session.inputSources;
+    if (!sources) return;
+    var bestY = 0, bestGp = null;
+    for (var i = 0; i < sources.length; i++) {
+      var gp = sources[i].gamepad;
+      if (!gp) continue;
+      var y = stickY(gp);
+      if (Math.abs(y) > Math.abs(bestY)) { bestY = y; bestGp = gp; }
+    }
+    if (!stick.armed) {
+      if (Math.abs(bestY) < 0.3) stick.armed = true;
+      return;
+    }
+    if (bestY < -0.6 || bestY > 0.6) {
+      stick.armed = false;
+      var appeared = bestY < 0;
+      if (logEvent(appeared ? 'on' : 'off') && bestGp) buzz(bestGp, appeared ? 0.5 : 0.3, appeared ? 60 : 40);
+    }
+  }
+
   function anyButtonPressed(session) {
     var sources = session.inputSources;
     if (!sources) return false;
@@ -1104,6 +1237,7 @@ textarea {
     run.frameRate = session.frameRate || null;
     kill.armed = false;
     kill.armAfter = performance.now() + 800;
+    stick.armed = false;
 
     session.addEventListener('end', onSessionEnd);
     session.addEventListener('visibilitychange', function () {
@@ -1140,7 +1274,9 @@ textarea {
     }
 
     if (xr.refSpace) { try { frame.getViewerPose(xr.refSpace); } catch (e) {} }
-    paintXR(frameTick(T));
+    var L = frameTick(T);
+    if (run && !run.done) pollStick(session);
+    paintXR(L);
   }
 
   function endXR() {
@@ -1185,7 +1321,8 @@ textarea {
     var i = segIndexAt(t, run.tl);
     var parts = run.tl.segs.length > 1 ? 'Part ' + (i + 1) + ', ' : '';
     var rate = run.prog.light === 'flicker' ? fmtHz(run.tl.segs[i].hz) + ' pulses per second, ' : '';
-    progressEl.textContent = run.prog.name + ': ' + parts + rate + fmtTime(t) + ' of ' + fmtTime(run.tl.total);
+    var logNote = run.prog.logs ? (run.logOpen !== null ? '. Logging: something visible' : '. Logged: ' + run.log.length) : '';
+    progressEl.textContent = run.prog.name + ': ' + parts + rate + fmtTime(t) + ' of ' + fmtTime(run.tl.total) + logNote;
   }
 
   function endPreview() {
@@ -1199,9 +1336,14 @@ textarea {
   previewBtn.addEventListener('click', startPreview);
   stopBtn.addEventListener('click', function () { finish('stopped'); });
   document.addEventListener('keydown', function (e) {
-    if (run && !run.done && run.mode === 'preview' && (e.key === 'Escape' || e.key === ' ')) {
-      e.preventDefault();
-      finish('stopped');
+    if (run && !run.done && run.mode === 'preview') {
+      if (e.key === 'Escape' || e.key === ' ') {
+        e.preventDefault();
+        finish('stopped');
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (logEvent(e.key === 'ArrowUp' ? 'on' : 'off')) showProgress();
+      }
     }
   });
   document.addEventListener('visibilitychange', function () {
@@ -1265,6 +1407,50 @@ textarea {
     if (!value) return '?';
     if (value.indexOf('Part ') === 0) return value.split(' ')[1];
     return value.charAt(0);
+  }
+
+  function fmtSecs(x) {
+    return x < 60 ? Math.round(x) + ' s' : fmtTime(x);
+  }
+  function logSummary(r) {
+    var n = r.log.length, total = 0;
+    r.log.forEach(function (e) { total += e.end - e.start; });
+    var length = Math.max(1, Math.min(r.elapsed, r.tl.total));
+    return { n: n, total: total, avg: n ? total / n : 0, first: n ? r.log[0].start : null, pct: (100 * total) / length };
+  }
+  function renderLog(r) {
+    var box = $('logBox');
+    if (!r.prog.logs) { box.hidden = true; return; }
+    box.hidden = false;
+    var ls = logSummary(r);
+    var stats = $('logStats');
+    stats.innerHTML = '';
+    function stat(label, value) {
+      var dt = document.createElement('dt'); dt.textContent = label;
+      var dd = document.createElement('dd'); dd.textContent = value;
+      stats.appendChild(dt); stats.appendChild(dd);
+    }
+    if (!ls.n) {
+      stat('Logged', 'Nothing logged');
+    } else {
+      stat('Times logged', String(ls.n));
+      stat('First one', fmtTime(ls.first) + ' in');
+      stat('Average length', fmtSecs(ls.avg));
+      stat('Total time', fmtTime(ls.total) + ' (' + Math.round(ls.pct) + '% of the session)');
+    }
+    var bar = $('timeline');
+    bar.innerHTML = '';
+    var span = r.tl.total;
+    r.log.forEach(function (e) {
+      var el = document.createElement('span');
+      el.style.left = (100 * e.start / span) + '%';
+      el.style.width = Math.max(0.6, 100 * (e.end - e.start) / span) + '%';
+      bar.appendChild(el);
+    });
+    bar.setAttribute('aria-label', ls.n ? ls.n + ' logged periods across the session' : 'Nothing logged');
+    $('timelineEnd').textContent = fmtTime(span);
+    $('logContext').textContent = r.prog.studyNote || '';
+    $('logContext').hidden = !r.prog.studyNote;
   }
 
   function renderQuestions(r) {
@@ -1394,6 +1580,7 @@ textarea {
     $('segWrap').hidden = r.tl.segs.length < 2;
     $('details').open = r.prog === PROGRAMS.test;
 
+    renderLog(r);
     renderQuestions(r);
     showNote('', '');
     buildReport();
@@ -1413,8 +1600,8 @@ textarea {
     lines.push('Session: ' + prog.name + ' (' + fmtTime(r.tl.total) + ')');
     lines.push('Mode: ' + (r.mode === 'vr' ? 'VR headset' : 'on-screen preview'));
     lines.push('Result: ' + (r.reason === 'complete' ? 'complete' : 'stopped at ' + fmtTime(r.elapsed) + ' (' + r.reason + ')'));
-    var sound = prog.sound === 'beats' ? r.s.sound + ' beat tones'
-      : prog.sound === 'noise' ? 'brown noise'
+    var sound = r.soundKind === 'beats' ? r.s.sound + ' beat tones'
+      : r.soundKind === 'noise' ? 'brown noise'
       : 'rhythm track' + (r.rhythm ? ' at ' + Math.round(r.rhythm.bpm) + ' BPM' : '');
     lines.push('Sound: ' + sound + ', volume ' + Math.round(r.s.volume * 100) + '%');
     var light = prog.light === 'flicker'
@@ -1439,17 +1626,27 @@ textarea {
       lines.push('Audio: ' + ctx.sampleRate + ' Hz, base latency ' + (ctx.baseLatency ? Math.round(ctx.baseLatency * 1000) + ' ms' : 'n/a') +
         ', output latency ' + (ctx.outputLatency ? Math.round(ctx.outputLatency * 1000) + ' ms' : 'n/a'));
     }
+    if (prog.logs) {
+      var ls = logSummary(r);
+      lines.push('Pattern log: ' + (ls.n
+        ? ls.n + ' logged, first at ' + fmtTime(ls.first) + ', average ' + fmtSecs(ls.avg) + ', total ' + fmtTime(ls.total) + ' (' + Math.round(ls.pct) + '%)'
+        : 'nothing logged'));
+      if (ls.n) lines.push('  Times: ' + r.log.slice(0, 30).map(function (e) { return fmtTime(e.start) + '-' + fmtTime(e.end); }).join(', '));
+    }
     prog.questions.forEach(function (key) {
       lines.push(QUESTIONS[key].label + ' ' + (r.answers[key] || 'Not answered'));
     });
     lines.push('Browser: ' + navigator.userAgent);
     $('report').value = lines.join('\n');
 
-    // Quick code, e.g. "VR FR ST GR 71.9 0-0-1-0 3YN"
+    // Quick code, e.g. "VR VI ST GR 71.9 0 L4@1:32 RT SMN"
     var missed = !sum.perSeg ? 'x'
       : r.tl.segs.length > 1 ? sum.perSeg.map(function (p) { return p.frames ? p.missed : 'x'; }).join('-')
       : String(sum.missed);
     var lightCode = prog.light === 'steady' ? 'SD' : r.s.wave === 'strobe' ? 'ST' : 'SM';
+    var lsq = prog.logs ? logSummary(r) : null;
+    var logCode = lsq ? (lsq.n ? 'L' + lsq.n + '@' + fmtTime(lsq.first) : 'L0') : null;
+    var soundCode = prog.sound === 'visuals' ? (r.soundKind === 'noise' ? 'BN' : 'RT') : null;
     $('quick').textContent = [
       r.mode === 'vr' ? 'VR' : 'PV',
       prog.code,
@@ -1457,8 +1654,10 @@ textarea {
       COLORS[r.s.color].code,
       sum.n ? sum.fps.toFixed(1) : '0',
       missed,
+      logCode,
+      soundCode,
       prog.questions.map(function (key) { return answerCode(key, r.answers[key]); }).join('')
-    ].join(' ');
+    ].filter(function (x) { return x !== null; }).join(' ');
   }
 
   $('copyBtn').addEventListener('click', function () {
